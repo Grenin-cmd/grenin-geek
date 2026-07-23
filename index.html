@@ -641,13 +641,11 @@
       card.innerHTML = `
         <div class="card-top">
           <span class="type-label"><span class="dot"></span>${cat.label}</span>
-          <span>${p.code}</span>
         </div>
         <div class="card-img">Imagem do produto</div>
         <h3>${p.name}</h3>
         <p class="desc">${p.desc}</p>
         <div class="card-stats">
-          <span class="code">Cód. ${p.code}</span>
           <span class="price"><small>R$</small> ${p.price.toFixed(2).replace(".", ",")}</span>
         </div>
         <a class="buy" href="${whatsappLink(p.name)}" target="_blank" rel="noopener">Comprar via WhatsApp</a>
