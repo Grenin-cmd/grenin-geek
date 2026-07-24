@@ -308,9 +308,6 @@ header{
 .card-img{
   aspect-ratio: 4/3;
   border-radius: 8px;
-  background:
-    repeating-conic-gradient(rgba(0,0,0,0.07) 0% 25%, transparent 0% 50%) 0 0/12px 12px,
-    linear-gradient(160deg, var(--cardcolor, var(--type-electric)) 0%, #ffffff 140%);
   display:flex;
   align-items:center;
   justify-content:center;
