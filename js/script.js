@@ -17,7 +17,7 @@ const CATEGORIES = {
 // Lista de produtos — troque nome, categoria, preço, descrição e imagem.
 // O campo "image" é opcional: se não tiver, aparece um placeholder no lugar da foto.
 const PRODUCTS = [
-  { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/clefable-box.jpg" },
+  { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/box-clefable.jpg" },
   { name: "Coleção Arco-Íris Evoluções Prismáticas", category: "pokemon-tcg", price: 210, desc: "Caixa fechada, 10 pacotes." },
   { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes." },
   { name: "Blister Triplo Caos Ascendente", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes." },
