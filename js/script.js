@@ -192,6 +192,16 @@ function updateCart(){
     saveCart();
 
 }
+function removeCart(index){
+
+    cart.splice(index, 1);
+
+    saveCart();
+
+    updateCart();
+
+}
+
 console.log("renderizando produtos");
 function renderProducts(){
   binder.innerHTML = "";
