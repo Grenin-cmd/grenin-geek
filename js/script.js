@@ -314,3 +314,12 @@ if(finishOrder){
     });
 
 }
+function removeCart(index){
+
+    cart.splice(index, 1);
+
+    saveCart();
+
+    updateCart();
+
+}
