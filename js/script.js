@@ -201,7 +201,23 @@ function removeCart(index){
     updateCart();
 
 }
+function changeQuantity(index, value){
 
+    cart[index].quantity += value;
+
+
+    if(cart[index].quantity <= 0){
+
+        cart.splice(index, 1);
+
+    }
+
+
+    saveCart();
+
+    updateCart();
+
+}
 console.log("renderizando produtos");
 function renderProducts(){
   binder.innerHTML = "";
