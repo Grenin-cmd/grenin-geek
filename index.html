@@ -4,301 +4,195 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Grenin Geek Store — Pokémon TCG e Cultura Geek</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
 <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-
 <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
 
 <header>
-    <div class="header-inner">
-
-        <div class="logo">
-            <div class="logo-mark">
-                <img src="assets/grenin-logo.png" alt="Logo Grenin Geek Store">
-            </div>
-
-            <div>
-                Grenin Geek Store
-                <span class="small">TCG & Cultura Geek</span>
-            </div>
-        </div>
-
-        <div class="header-buttons">
-
-            <button id="cartButton" class="cart-button">
-                🛒
-                <span id="cartCount">0</span>
-            </button>
-
-            <a class="header-cta" href="#catalogo">
-                Ver catálogo
-            </a>
-
-        </div>
-
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark"><img src="assets/grenin-logo.png" alt="Logo Grenin Geek Store"></div>
+      <div>
+        Grenin Geek Store
+        <span class="small">TCG &amp; Cultura Geek</span>
+      </div>
     </div>
+    <div class="header-actions">
+
+    <button id="cartButton" class="cart-button">
+
+        🛒
+
+        <span id="cartCount">0</span>
+
+    </button>
+
+    <a class="header-cta" href="#catalogo">
+
+        Ver catálogo
+
+    </a>
+
+</div>
+  </div>
 </header>
 
 <section class="hero">
-
-    <div class="wrap">
-
-        <div class="hero-logo">
-            <img src="assets/grenin-logo.png" alt="Logo Grenin Geek Store">
-        </div>
-
-        <p class="eyebrow">
-            Loja de cartas & colecionáveis
-        </p>
-
-        <h1>Grenin Geek Store</h1>
-
-        <p class="sub">
-            Abra o pack, monte a coleção, jogue sem limites.
-            Pokémon TCG, outros card games e cultura geek em um só lugar.
-        </p>
-
-        <div class="hero-actions">
-
-            <a class="btn-primary" href="#catalogo">
-                Explorar catálogo
-            </a>
-
-            <a class="btn-ghost" href="#sobre">
-                Conhecer a loja
-            </a>
-
-        </div>
-
+  <div class="wrap">
+    <div class="hero-logo"><img src="assets/grenin-logo.png" alt="Logo Grenin Geek Store"></div>
+    <p class="eyebrow">Loja de cartas &amp; colecionáveis</p>
+    <h1>Grenin Geek Store</h1>
+    <p class="sub">Abra o pack, monte a coleção, jogue sem limites. Pokémon TCG, outros card games e cultura geek em um só lugar.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="#catalogo">Explorar catálogo</a>
+      <a class="btn-ghost" href="#sobre">Conhecer a loja</a>
     </div>
-
+  </div>
 </section>
-
 <div class="tear">
-
-    <svg class="tear-sparkle"
-         viewBox="0 0 24 24"
-         fill="currentColor">
-
-        <rect x="10" y="2" width="4" height="6"/>
-        <rect x="10" y="16" width="4" height="6"/>
-        <rect x="2" y="10" width="6" height="4"/>
-        <rect x="16" y="10" width="6" height="4"/>
-
-    </svg>
-
+  <svg class="tear-sparkle" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <rect x="10" y="2" width="4" height="6"/>
+    <rect x="10" y="16" width="4" height="6"/>
+    <rect x="2" y="10" width="6" height="4"/>
+    <rect x="16" y="10" width="6" height="4"/>
+  </svg>
 </div>
 
 <section class="catalog-section" id="catalogo">
-
-    <div class="wrap">
-
-        <div class="catalog-head">
-
-            <h2>Catálogo</h2>
-
-            <p>Toque em uma categoria para filtrar</p>
-
-        </div>
-
-        <div class="tabs" id="tabs">
-
-            <button class="tab active"
-                    data-filter="all"
-                    style="--dotcolor: var(--gold)">
-                <span class="dot"></span>
-                Tudo
-            </button>
-
-            <button class="tab"
-                    data-filter="pokemon-tcg"
-                    style="--dotcolor: var(--type-electric)">
-                <span class="dot"></span>
-                Pokémon TCG
-            </button>
-
-            <button class="tab"
-                    data-filter="mangas"
-                    style="--dotcolor: var(--type-psychic)">
-                <span class="dot"></span>
-                Mangás
-            </button>
-
-            <button class="tab"
-                    data-filter="colecionaveis"
-                    style="--dotcolor: var(--type-fighting)">
-                <span class="dot"></span>
-                Colecionáveis
-            </button>
-
-            <button class="tab"
-                    data-filter="acessorios"
-                    style="--dotcolor: var(--type-colorless)">
-                <span class="dot"></span>
-                Acessórios
-            </button>
-
-        </div>
-
-        <div class="binder" id="binder"></div>
-
+  <div class="wrap">
+    <div class="catalog-head">
+      <h2>Catálogo</h2>
+      <p>Toque em uma categoria para filtrar</p>
     </div>
 
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-filter="all" style="--dotcolor: var(--gold)">
+        <span class="dot"></span> Tudo
+      </button>
+      <button class="tab" data-filter="pokemon-tcg" style="--dotcolor: var(--type-electric)">
+        <span class="dot"></span> Pokémon TCG
+      </button>
+      <button class="tab" data-filter="mangas" style="--dotcolor: var(--type-psychic)">
+        <span class="dot"></span> Mangás
+      </button>
+      <button class="tab" data-filter="colecionaveis" style="--dotcolor: var(--type-fighting)">
+        <span class="dot"></span> Colecionáveis
+      </button>
+      <button class="tab" data-filter="acessorios" style="--dotcolor: var(--type-colorless)">
+        <span class="dot"></span> Acessórios
+      </button>
+    </div>
+
+    <div class="binder" id="binder">
+      <!-- Os cards de produto são gerados via JS a partir da lista PRODUCTS em js/script.js -->
+    </div>
+  </div>
 </section>
 
 <section class="about" id="sobre">
-
-    <div class="wrap">
-
-        <div class="about-panel">
-
-            <div>
-
-                <h2>
-                    Seja bem vindo(a) a Grenin Geek Store!!
-                </h2>
-
-                <p>
-                    Somos uma loja voltada para colecionadores e jogadores:
-                    Pokémon TCG e itens de cultura geek selecionados com carinho.
-
-                    Nosso objetivo é levar essa cultura para todos com fácil acesso,
-                    seja você iniciante ou veterano.
-                </p>
-
-                <div class="about-badges">
-
-                    <span>Pokémon TCG</span>
-                    <span>Outros TCGs</span>
-                    <span>Colecionáveis</span>
-                    <span>Acessórios</span>
-
-                </div>
-
-            </div>
-
-            <div class="about-visual">
-                Espaço para foto da loja, do estoque ou da equipe
-            </div>
-
+  <div class="wrap">
+    <div class="about-panel">
+      <div>
+        <h2>Seja bem vindo(a) a Grenin Geek Store!!</h2>
+        <p>
+          Somos uma loja voltada para colecionadores e jogadores: Pokémon TCG e itens de cultura geek selecionados com carinho.
+          Nosso objetivo é levar essa cultura para todos com facil acesso e melhor acessibilidade seja você iniciante ou um veterano na aréa!
+          Quer aumentar sua coleção ou começar? A Grenin é sua porta de entrada para esse Universo!!!
+        </p>
+        <div class="about-badges">
+          <span>Pokémon TCG</span>
+          <span>Outros TCGs</span>
+          <span>Colecionáveis</span>
+          <span>Acessórios</span>
         </div>
-
+      </div>
+      <div class="about-visual">Espaço para foto da loja, do estoque ou da equipe</div>
     </div>
-
+  </div>
 </section>
 
 <footer>
-
-    <div class="wrap">
-
-        <div class="footer-inner">
-
-            <div>
-
-                <strong style="color:var(--text)">
-                    Grenin Geek Store
-                </strong>
-
-                <br>
-
-                Rua Argentina n°54
-                Bairro Novo Mundo
-                Cláudio - MG
-
-            </div>
-
-            <div>
-
-                WhatsApp:
-                <a href="#" id="footer-whats">
-                    (37) 99944-9137
-                </a>
-
-                <br>
-
-                Instagram:
-                <a href="#">
-                    @edite_o_instagram
-                </a>
-
-            </div>
-
-            <div>
-
-                Horário de atendimento
-
-                <br>
-
-                Segunda a Sexta
-                08:00 às 19:00
-
-            </div>
-
-        </div>
-
-        <p class="footer-legal">
-
-            Catálogo ilustrativo.
-            Preços e disponibilidade sujeitos a alteração sem aviso prévio.
-
-        </p>
-
+  <div class="wrap">
+    <div class="footer-inner">
+      <div>
+        <strong style="color:var(--text)">Grenin Geek Store</strong><br>
+        Rua Argentina n 54, Bairro Novo Mundo - Cláudio MG
+      </div>
+      <div>
+        WhatsApp: <a href="#" id="footer-whats">37999449137</a><br>
+        Instagram: <a href="#">@edite_o_instagram</a>
+      </div>
+      <div>
+        Horário de atendimento:<br>
+        Segunda a Sexta (08:00 - 19:00)
+      </div>
     </div>
-
+    <p class="footer-legal">
+      Catálogo ilustrativo. Preços e disponibilidade sujeitos a alteração sem aviso prévio.
+      Produtos e imagens de terceiros pertencem aos seus respectivos detentores.
+    </p>
+  </div>
 </footer>
-
 <!-- Overlay -->
 
-<div id="cartOverlay"></div>
+<div id="cartOverlay" class="cart-overlay"></div>
 
 <!-- Carrinho -->
 
-<aside id="cartSidebar">
+<aside id="cartSidebar" class="cart-sidebar">
 
     <div class="cart-header">
 
         <h2>
-            🛒 Carrinho
+
+            Seu Carrinho
+
         </h2>
 
         <button id="closeCart">
+
             ✕
+
         </button>
 
     </div>
 
-    <div id="cartItems"></div>
+    <div id="cartItems">
+
+    </div>
 
     <div class="cart-footer">
 
         <div class="cart-total">
 
-            Total
+            <span>Total</span>
 
-            <span id="cartTotal">
+            <strong id="cartTotal">
+
                 R$ 0,00
-            </span>
+
+            </strong>
 
         </div>
 
         <button id="finishOrder">
+
             Finalizar compra
+
         </button>
 
-        <button id="askQuestions">
+        <button id="questionOrder">
+
             Tirar dúvidas
+
         </button>
 
     </div>
 
 </aside>
-
 <script src="js/script.js"></script>
 
 </body>
