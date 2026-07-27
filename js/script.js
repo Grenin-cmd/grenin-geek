@@ -159,25 +159,23 @@ function updateCart(){
                     R$ ${item.price.toFixed(2).replace(".",",")}
                 </p>
 
-                <div class="quantity-control">
+               <div class="cart-controls">
 
-    <button class="quantity-btn" onclick="changeQuantity(${index}, -1)">
-        −
+    <button onclick="changeQuantity(${index}, -1)">
+        -
     </button>
 
     <span>${item.quantity}</span>
 
-    <button class="quantity-btn" onclick="changeQuantity(${index}, 1)">
+    <button onclick="changeQuantity(${index}, 1)">
         +
     </button>
 
+    <button onclick="removeCart(${index})">
+        🗑️
+    </button>
+
 </div>
-
-<button class="remove-btn" onclick="removeCart(${index})">
-    🗑️
-</button>
-
-                </div>
 
             </div>
         `;
