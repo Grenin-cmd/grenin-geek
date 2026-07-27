@@ -259,3 +259,48 @@ tabs.addEventListener("click", (e) => {
 });
 
 renderProducts();
+const finishOrder = document.getElementById("finishOrder");
+
+if(finishOrder){
+
+    finishOrder.addEventListener("click", () => {
+
+        if(cart.length === 0){
+
+            alert("Seu carrinho está vazio!");
+
+            return;
+
+        }
+
+
+        let message = `Olá! Gostaria de fazer um pedido na Grenin Geek Store:\n\n`;
+
+
+        let total = 0;
+
+
+        cart.forEach(item => {
+
+            const subtotal = item.price * item.quantity;
+
+            total += subtotal;
+
+
+            message += `${item.quantity}x ${item.name} - R$ ${subtotal.toFixed(2).replace(".",",")}\n`;
+
+        });
+
+
+        message += `\nTotal: R$ ${total.toFixed(2).replace(".",",")}`;
+
+
+        const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+
+
+        window.open(url, "_blank");
+
+
+    });
+
+}
