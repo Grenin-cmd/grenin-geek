@@ -260,7 +260,7 @@ tabs.addEventListener("click", (e) => {
 
 renderProducts();
 const finishOrder = document.getElementById("finishOrder");
-
+console.log("Botão finalizar:", finishOrder);
 if(finishOrder){
 
     finishOrder.addEventListener("click", () => {
