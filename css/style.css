@@ -907,3 +907,35 @@ footer{
     }
 
 }
+.quantity-control{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin-top:10px;
+}
+
+.quantity-control span{
+    min-width:25px;
+    text-align:center;
+    font-weight:bold;
+}
+
+.quantity-btn{
+    width:30px;
+    height:30px;
+    border:none;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.remove-btn{
+    border:none;
+    background:none;
+    cursor:pointer;
+    font-size:18px;
+    margin-top:8px;
+}
