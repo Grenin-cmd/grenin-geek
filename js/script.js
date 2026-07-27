@@ -25,7 +25,7 @@ const PRODUCTS = [
   { name: "Bleach Remix Vol. 3", category: "mangas", price: 45, desc: "Usado.",image:"assets/produtos/bleach3.jpg" },
    { name: "Bleach Remix Vol. 4", category: "mangas", price: 45, desc: "Usado.",image:"assets/produtos/bleach4.jpg" },
 { name: "Bleach Remix Vol. 5", category: "mangas", price: 45, desc: "Usado.",image:"assets/produtos/bleach5.jpg" },
-{ name: "Radiand Vol. 14", category: "mangas", price: 27, desc: "Usado." },
+{ name: "Radiant Vol. 14", category: "mangas", price: 27, desc: "Usado.", image:"assets/produtos/radiand14.jpg" },
 { name: "Vagabond Vol. 1", category: "mangas", price: 36.50, desc: "Novo." },
 { name: "Gantz Vol. 3", category: "mangas", price: 27, desc: "Novo." },
 { name: "Gantz Vol. 4", category: "mangas", price: 45, desc: "Novo." },
