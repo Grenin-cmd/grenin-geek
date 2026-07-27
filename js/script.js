@@ -192,6 +192,7 @@ function updateCart(){
     saveCart();
 
 }
+console.log("renderizando produtos");
 function renderProducts(){
   binder.innerHTML = "";
   PRODUCTS.forEach((p) => {
