@@ -2,7 +2,7 @@
    CONFIGURAÇÃO RÁPIDA — edite só esta parte para atualizar
    o catálogo, sem mexer no design.
    ========================================================= */
-
+console.log("JS carregou");
 // Número de WhatsApp da loja (só números, com DDI 55 + DDD)
 const WHATSAPP_NUMBER = "5537999449137";
 
