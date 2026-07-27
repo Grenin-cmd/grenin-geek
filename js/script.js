@@ -43,10 +43,155 @@ const footerWhats = document.getElementById("footer-whats");
 footerWhats.textContent = "+" + WHATSAPP_NUMBER.replace(/(\d{2})(\d{2})(\d{5})(\d{4})/, "$1 ($2) $3-$4");
 
 function whatsappLink(productName){
-  const msg = encodeURIComponent("Olá! Tenho interesse no produto: " + productName);
-  return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + msg;
-}
 
+    const msg = encodeURIComponent(
+
+`Olá!
+
+Tenho interesse em saber mais sobre:
+
+${productName}
+
+Pode me passar mais informações?`
+
+    );
+
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
+
+}
+/* ===========================================
+                CARRINHO
+=========================================== */
+
+let cart = JSON.parse(localStorage.getItem("grenin-cart")) || [];
+
+const cartButton = document.getElementById("cartButton");
+const cartSidebar = document.getElementById("cartSidebar");
+const cartOverlay = document.getElementById("cartOverlay");
+const closeCart = document.getElementById("closeCart");
+
+const cartItems = document.getElementById("cartItems");
+const cartTotal = document.getElementById("cartTotal");
+const cartCount = document.getElementById("cartCount");
+
+cartButton.addEventListener("click", () => {
+
+    cartSidebar.classList.add("active");
+    cartOverlay.classList.add("active");
+
+});
+
+closeCart.addEventListener("click", () => {
+
+    cartSidebar.classList.remove("active");
+    cartOverlay.classList.remove("active");
+
+});
+
+cartOverlay.addEventListener("click", () => {
+
+    cartSidebar.classList.remove("active");
+    cartOverlay.classList.remove("active");
+
+});
+
+function saveCart(){
+
+    localStorage.setItem("grenin-cart", JSON.stringify(cart));
+
+}
+function addToCart(index){
+
+    const product = PRODUCTS[index];
+
+    const existing = cart.find(item => item.name === product.name);
+
+    if(existing){
+
+        existing.quantity++;
+
+    }else{
+
+        cart.push({
+
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            desc: product.desc,
+            quantity: 1
+
+        });
+
+    }
+
+    saveCart();
+
+    updateCart();
+
+    cartSidebar.classList.add("active");
+    cartOverlay.classList.add("active");
+
+}
+function updateCart(){
+
+    cartItems.innerHTML = "";
+
+    let total = 0;
+    let count = 0;
+
+    cart.forEach((item, index) => {
+
+        total += item.price * item.quantity;
+        count += item.quantity;
+
+        const div = document.createElement("div");
+
+        div.className = "cart-item";
+
+        div.innerHTML = `
+            <img src="${item.image}" alt="${item.name}">
+
+            <div class="cart-info">
+
+                <h4>${item.name}</h4>
+
+                <p>
+                    R$ ${item.price.toFixed(2).replace(".",",")}
+                </p>
+
+                <div class="cart-controls">
+
+                    <button onclick="changeQuantity(${index}, -1)">
+                        -
+                    </button>
+
+                    <span>${item.quantity}</span>
+
+                    <button onclick="changeQuantity(${index}, 1)">
+                        +
+                    </button>
+
+                    <button onclick="removeCart(${index})">
+                        🗑️
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+        cartItems.appendChild(div);
+
+    });
+
+    cartTotal.textContent =
+        "R$ " + total.toFixed(2).replace(".",",");
+
+    cartCount.textContent = count;
+
+    saveCart();
+
+}
 function renderProducts(){
   binder.innerHTML = "";
   PRODUCTS.forEach((p) => {
@@ -70,7 +215,28 @@ function renderProducts(){
       <div class="card-stats">
         <span class="price"><small>R$</small> ${p.price.toFixed(2).replace(".", ",")}</span>
       </div>
-      <a class="buy" href="${whatsappLink(p.name)}" target="_blank" rel="noopener">Comprar via WhatsApp</a>
+      <div class="product-buttons">
+
+    <button
+        class="btn-cart"
+        onclick="addToCart(${PRODUCTS.indexOf(p)})">
+
+        🛒 Adicionar ao Carrinho
+
+    </button>
+
+    <a
+        class="btn-more"
+        href="${whatsappLink(p.name)}"
+        target="_blank"
+        rel="noopener">
+
+        Saber Mais
+
+    </a>
+
+</div>
+
     `;
     binder.appendChild(card);
   });
