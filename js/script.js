@@ -367,3 +367,17 @@ function changeQuantity(index, value){
     updateCart();
 
 }
+window.changeQuantity = function(index, value){
+
+    cart[index].quantity += value;
+
+    if(cart[index].quantity <= 0){
+
+        cart.splice(index, 1);
+
+    }
+
+    saveCart();
+    updateCart();
+
+};
