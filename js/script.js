@@ -314,6 +314,23 @@ if(finishOrder){
     });
 
 }
+const questionOrder = document.getElementById("questionOrder");
+
+if(questionOrder){
+
+    questionOrder.addEventListener("click", () => {
+
+        const message = encodeURIComponent(
+            "Olá! Tenho uma dúvida sobre alguns produtos da Grenin Geek Store."
+        );
+
+        const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+
+        window.open(url, "_blank");
+
+    });
+
+}
 function removeCart(index){
 
     cart.splice(index, 1);
