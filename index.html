@@ -21,22 +21,12 @@
       </div>
     </div>
     <div class="header-actions">
-
-    <button id="cartButton" class="cart-button">
-
+      <button id="cartButton" class="cart-button" aria-label="Abrir carrinho">
         🛒
-
         <span id="cartCount">0</span>
-
-    </button>
-
-    <a class="header-cta" href="#catalogo">
-
-        Ver catálogo
-
-    </a>
-
-</div>
+      </button>
+      <a class="header-cta" href="#catalogo">Ver catálogo</a>
+    </div>
   </div>
 </header>
 
@@ -104,7 +94,7 @@
         </p>
         <div class="about-badges">
           <span>Pokémon TCG</span>
-          <span>Outros TCGs</span>
+          <span>Mangás</span>
           <span>Colecionáveis</span>
           <span>Acessórios</span>
         </div>
@@ -136,63 +126,29 @@
     </p>
   </div>
 </footer>
-<!-- Overlay -->
 
+<!-- Fundo escurecido atrás do carrinho -->
 <div id="cartOverlay" class="cart-overlay"></div>
 
 <!-- Carrinho -->
-
 <aside id="cartSidebar" class="cart-sidebar">
+  <div class="cart-header">
+    <h2>Seu Carrinho</h2>
+    <button id="closeCart" aria-label="Fechar carrinho">✕</button>
+  </div>
 
-    <div class="cart-header">
+  <div id="cartItems"></div>
 
-        <h2>
-
-            Seu Carrinho
-
-        </h2>
-
-        <button id="closeCart">
-
-            ✕
-
-        </button>
-
+  <div class="cart-footer">
+    <div class="cart-total">
+      <span>Total</span>
+      <strong id="cartTotal">R$ 0,00</strong>
     </div>
-
-    <div id="cartItems">
-
-    </div>
-
-    <div class="cart-footer">
-
-        <div class="cart-total">
-
-            <span>Total</span>
-
-            <strong id="cartTotal">
-
-                R$ 0,00
-
-            </strong>
-
-        </div>
-
-        <button id="finishOrder">
-
-            Finalizar compra
-
-        </button>
-
-        <button id="questionOrder">
-
-            Tirar dúvidas
-
-        </button>
-
-    </div>
-
+    <button id="finishOrder">Finalizar compra</button>
+    <button id="questionOrder">Tirar dúvidas</button>
+  </div>
 </aside>
+
 <script src="js/script.js"></script>
 
 </body>
