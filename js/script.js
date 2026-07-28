@@ -16,22 +16,31 @@ const CATEGORIES = {
 
 // Lista de produtos — troque nome, categoria, preço, descrição e imagem.
 // O campo "image" é opcional: se não tiver, aparece um placeholder colorido no lugar da foto.
+// O campo "stock" é a quantidade em estoque: quando chegar a 0, o produto
+// aparece com o selo "Esgotado" e o botão de adicionar ao carrinho é desativado.
 const PRODUCTS = [
-  { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/produtos/box-clefable.jpg" },
-  { name: "Coleção Arco-Íris Evoluções Prismáticas", category: "pokemon-tcg", price: 210, desc: "Caixa fechada, 10 pacotes.", image: "assets/produtos/box-eevee.jpg" },
-  { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-escuridão.jpg" },
-  { name: "Blister Triplo Caos Ascendente", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-caos.jpg" },
-  { name: "Bleach Remix Vol. 2", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach2.jpg" },
-  { name: "Bleach Remix Vol. 3", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach3.jpg" },
-  { name: "Bleach Remix Vol. 4", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach4.jpg" },
-  { name: "Bleach Remix Vol. 5", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach5.jpg" },
-  { name: "Radiant Vol. 14", category: "mangas", price: 27, desc: "Usado.", image: "assets/produtos/radiand14.jpg" },
-  { name: "Vagabond Vol. 1", category: "mangas", price: 36.50, desc: "Novo.", image: "assets/produtos/vagabond1.jpg" },
-  { name: "Gantz Vol. 3", category: "mangas", price: 27, desc: "Novo.", image: "assets/produtos/gantz3.jpg" },
-  { name: "Gantz Vol. 4", category: "mangas", price: 45, desc: "Novo.", image: "assets/produtos/gantz4.jpg" },
-  { name: "Noragami Vol. 23", category: "mangas", price: 22.99, desc: "Usado.", image: "assets/produtos/noragami23.jpg" },
-  { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG." }
+  { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/produtos/box-clefable.jpg", stock: 10 },
+  { name: "Coleção Arco-Íris Evoluções Prismáticas", category: "pokemon-tcg", price: 210, desc: "Caixa fechada, 10 pacotes.", image: "assets/produtos/box-eevee.jpg", stock: 10 },
+  { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-escuridão.jpg", stock: 10 },
+  { name: "Blister Triplo Caos Ascendente", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-caos.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 2", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach2.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 3", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach3.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 4", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach4.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 5", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach5.jpg", stock: 10 },
+  { name: "Radiant Vol. 14", category: "mangas", price: 27, desc: "Usado.", image: "assets/produtos/radiand14.jpg", stock: 10 },
+  { name: "Vagabond Vol. 1", category: "mangas", price: 36.50, desc: "Novo.", image: "assets/produtos/vagabond1.jpg", stock: 10 },
+  { name: "Gantz Vol. 3", category: "mangas", price: 27, desc: "Novo.", image: "assets/produtos/gantz3.jpg", stock: 10 },
+  { name: "Gantz Vol. 4", category: "mangas", price: 45, desc: "Novo.", image: "assets/produtos/gantz4.jpg", stock: 10 },
+  { name: "Noragami Vol. 23", category: "mangas", price: 22.99, desc: "Usado.", image: "assets/produtos/noragami23.jpg", stock: 10 },
+  { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG.", stock: 10 }
 ];
+
+// Cupons de desconto — chave é o código (o cliente pode digitar em
+// qualquer maiúscula/minúscula), valor é o percentual de desconto.
+const COUPONS = {
+  "GRENIN10": 0.10,
+  "BEMVINDO5": 0.05
+};
 
 /* =========================================================
    HELPERS — funções pequenas reutilizadas em vários lugares
@@ -60,12 +69,32 @@ function knowMoreLink(productName){
   );
 }
 
+let currentFilter = "all";
+let currentSort = "default";
+
+// Retorna os produtos na ordem certa, mas sempre lembrando o índice
+// original — é esse índice original que identifica o produto no
+// carrinho, então a ordenação na tela nunca pode bagunçar isso.
+function getSortedProducts(){
+  const withIndex = PRODUCTS.map((p, originalIndex) => ({ p, originalIndex }));
+
+  if(currentSort === "price-asc"){
+    withIndex.sort((a, b) => a.p.price - b.p.price);
+  } else if(currentSort === "price-desc"){
+    withIndex.sort((a, b) => b.p.price - a.p.price);
+  }
+
+  return withIndex;
+}
+
 function renderProducts(){
   binder.innerHTML = "";
-  PRODUCTS.forEach((p, index) => {
+  getSortedProducts().forEach(({ p, originalIndex }) => {
     const cat = CATEGORIES[p.category];
+    const outOfStock = p.stock === 0;
+
     const card = document.createElement("article");
-    card.className = "card";
+    card.className = "card" + (outOfStock ? " out-of-stock" : "");
     card.dataset.category = p.category;
     card.style.setProperty("--cardcolor", cat.color);
 
@@ -73,26 +102,35 @@ function renderProducts(){
       ? `<img src="${p.image}" alt="${p.name}">`
       : "Imagem do produto";
 
+    const stockBadgeHtml = outOfStock ? `<span class="stock-badge">Esgotado</span>` : "";
+
+    const cartButtonHtml = outOfStock
+      ? `<button type="button" class="btn-cart" disabled>Esgotado</button>`
+      : `<button type="button" class="btn-cart" data-index="${originalIndex}">🛒 Adicionar ao Carrinho</button>`;
+
     card.innerHTML = `
       <div class="card-top">
         <span class="type-label"><span class="dot"></span>${cat.label}</span>
       </div>
-      <div class="card-img">${imageHtml}</div>
+      <div class="card-img">${imageHtml}${stockBadgeHtml}</div>
       <h3>${p.name}</h3>
       <p class="desc">${p.desc}</p>
       <div class="card-stats">
         <span class="price"><small>R$</small> ${p.price.toFixed(2).replace(".", ",")}</span>
       </div>
       <div class="product-buttons">
-        <button type="button" class="btn-cart" data-index="${index}">🛒 Adicionar ao Carrinho</button>
+        ${cartButtonHtml}
         <a class="btn-more" href="${knowMoreLink(p.name)}" target="_blank" rel="noopener">Saber Mais</a>
       </div>
     `;
     binder.appendChild(card);
   });
+
+  applyFilter(currentFilter);
 }
 
 function applyFilter(filter){
+  currentFilter = filter;
   document.querySelectorAll(".card").forEach((card) => {
     const show = filter === "all" || card.dataset.category === filter;
     card.classList.toggle("is-hidden", !show);
@@ -105,6 +143,12 @@ tabs.addEventListener("click", (e) => {
   tabs.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
   btn.classList.add("active");
   applyFilter(btn.dataset.filter);
+});
+
+const sortSelect = document.getElementById("sortSelect");
+sortSelect.addEventListener("change", () => {
+  currentSort = sortSelect.value;
+  renderProducts();
 });
 
 // Um único listener no container cuida de todos os botões "Adicionar ao Carrinho",
@@ -127,10 +171,19 @@ const cartSidebar = document.getElementById("cartSidebar");
 const cartOverlay = document.getElementById("cartOverlay");
 const closeCartBtn = document.getElementById("closeCart");
 const cartItemsEl = document.getElementById("cartItems");
+const cartSubtotalEl = document.getElementById("cartSubtotal");
+const cartDiscountRow = document.getElementById("cartDiscountRow");
+const cartDiscountLabelEl = document.getElementById("cartDiscountLabel");
+const cartDiscountValueEl = document.getElementById("cartDiscountValue");
 const cartTotalEl = document.getElementById("cartTotal");
 const cartCountEl = document.getElementById("cartCount");
 const finishOrderBtn = document.getElementById("finishOrder");
 const questionOrderBtn = document.getElementById("questionOrder");
+const couponInput = document.getElementById("couponInput");
+const applyCouponBtn = document.getElementById("applyCoupon");
+const couponMessageEl = document.getElementById("couponMessage");
+
+let appliedCoupon = null; // { code, percent } ou null se nenhum cupom aplicado
 
 function saveCart(){
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -212,21 +265,25 @@ cartItemsEl.addEventListener("click", (e) => {
   if(action === "remove") removeFromCart(index);
 });
 
+function cartSubtotal(){
+  return cart.reduce((sum, item) => sum + PRODUCTS[item.index].price * item.quantity, 0);
+}
+
 function updateCart(){
   if(cart.length === 0){
     cartItemsEl.innerHTML = `<p class="cart-empty">Seu carrinho está vazio.<br>Adicione produtos do catálogo para começar.</p>`;
+    cartSubtotalEl.textContent = formatBRL(0);
+    cartDiscountRow.classList.remove("show");
     cartTotalEl.textContent = formatBRL(0);
     cartCountEl.textContent = "0";
     return;
   }
 
-  let total = 0;
   let count = 0;
 
   cartItemsEl.innerHTML = cart.map((item) => {
     const product = PRODUCTS[item.index];
     const subtotal = product.price * item.quantity;
-    total += subtotal;
     count += item.quantity;
 
     const imageHtml = product.image
@@ -250,9 +307,45 @@ function updateCart(){
     `;
   }).join("");
 
-  cartTotalEl.textContent = formatBRL(total);
+  const subtotal = cartSubtotal();
+  const discount = appliedCoupon ? subtotal * appliedCoupon.percent : 0;
+  const total = subtotal - discount;
+
+  cartSubtotalEl.textContent = formatBRL(subtotal);
   cartCountEl.textContent = String(count);
+
+  if(appliedCoupon){
+    cartDiscountRow.classList.add("show");
+    cartDiscountLabelEl.textContent = appliedCoupon.code;
+    cartDiscountValueEl.textContent = "- " + formatBRL(discount);
+  } else {
+    cartDiscountRow.classList.remove("show");
+  }
+
+  cartTotalEl.textContent = formatBRL(total);
 }
+
+applyCouponBtn.addEventListener("click", () => {
+  const code = couponInput.value.trim().toUpperCase();
+
+  if(!code){
+    couponMessageEl.textContent = "Digite um código de cupom.";
+    couponMessageEl.className = "coupon-message error";
+    return;
+  }
+
+  if(COUPONS[code]){
+    appliedCoupon = { code: code, percent: COUPONS[code] };
+    couponMessageEl.textContent = `Cupom aplicado! ${Math.round(COUPONS[code] * 100)}% de desconto.`;
+    couponMessageEl.className = "coupon-message success";
+  } else {
+    appliedCoupon = null;
+    couponMessageEl.textContent = "Cupom inválido.";
+    couponMessageEl.className = "coupon-message error";
+  }
+
+  updateCart();
+});
 
 finishOrderBtn.addEventListener("click", () => {
   if(cart.length === 0){
@@ -260,16 +353,23 @@ finishOrderBtn.addEventListener("click", () => {
     return;
   }
 
-  let total = 0;
   const lines = cart.map((item) => {
     const product = PRODUCTS[item.index];
     const subtotal = product.price * item.quantity;
-    total += subtotal;
     return `${item.quantity}x ${product.name} - ${formatBRL(subtotal)}`;
   }).join("\n");
 
-  const message =
-    `Olá! Gostaria de fazer um pedido na Grenin Geek Store:\n\n${lines}\n\nTotal: ${formatBRL(total)}`;
+  const subtotal = cartSubtotal();
+  const discount = appliedCoupon ? subtotal * appliedCoupon.percent : 0;
+  const total = subtotal - discount;
+
+  let message = `Olá! Gostaria de fazer um pedido na Grenin Geek Store:\n\n${lines}\n\nSubtotal: ${formatBRL(subtotal)}`;
+
+  if(appliedCoupon){
+    message += `\nCupom ${appliedCoupon.code}: - ${formatBRL(discount)}`;
+  }
+
+  message += `\nTotal: ${formatBRL(total)}`;
 
   window.open(whatsappLink(message), "_blank", "noopener");
 });
