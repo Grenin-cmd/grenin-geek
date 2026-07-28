@@ -56,6 +56,7 @@
     <div class="catalog-head">
       <h2>Catálogo</h2>
       <p>Toque em uma categoria para filtrar</p>
+      <input type="search" id="searchInput" class="search-input" placeholder="Buscar produto...">
       <label class="sort-control">
         Ordenar por
         <select id="sortSelect">
@@ -87,6 +88,7 @@
     <div class="binder" id="binder">
       <!-- Os cards de produto são gerados via JS a partir da lista PRODUCTS em js/script.js -->
     </div>
+    <p class="no-results" id="noResults" style="display:none">Nenhum produto encontrado.</p>
   </div>
 </section>
 
