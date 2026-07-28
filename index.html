@@ -56,6 +56,14 @@
     <div class="catalog-head">
       <h2>Catálogo</h2>
       <p>Toque em uma categoria para filtrar</p>
+      <label class="sort-control">
+        Ordenar por
+        <select id="sortSelect">
+          <option value="default">Padrão</option>
+          <option value="price-asc">Menor preço</option>
+          <option value="price-desc">Maior preço</option>
+        </select>
+      </label>
     </div>
 
     <div class="tabs" id="tabs">
@@ -140,10 +148,25 @@
   <div id="cartItems"></div>
 
   <div class="cart-footer">
+    <div class="cart-coupon">
+      <input type="text" id="couponInput" placeholder="Código de cupom">
+      <button id="applyCoupon" type="button">Aplicar</button>
+    </div>
+    <p id="couponMessage" class="coupon-message"></p>
+
+    <div class="cart-subtotal">
+      <span>Subtotal</span>
+      <span id="cartSubtotal">R$ 0,00</span>
+    </div>
+    <div class="cart-discount" id="cartDiscountRow">
+      <span>Desconto (<span id="cartDiscountLabel"></span>)</span>
+      <span id="cartDiscountValue">- R$ 0,00</span>
+    </div>
     <div class="cart-total">
       <span>Total</span>
       <strong id="cartTotal">R$ 0,00</strong>
     </div>
+
     <button id="finishOrder">Finalizar compra</button>
     <button id="questionOrder">Tirar dúvidas</button>
   </div>
