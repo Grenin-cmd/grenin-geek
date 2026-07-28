@@ -32,7 +32,7 @@ const PRODUCTS = [
   { name: "Gantz Vol. 3", category: "mangas", price: 27, desc: "Novo.", image: "assets/produtos/gantz3.jpg", stock: 1 },
   { name: "Gantz Vol. 4", category: "mangas", price: 45, desc: "Novo.", image: "assets/produtos/gantz4.jpg", stock: 1 },
   { name: "Noragami Vol. 23", category: "mangas", price: 22.99, desc: "Usado.", image: "assets/produtos/noragami23.jpg", stock: 1 },
-  { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG.", stock: 18 }
+  { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG.", image:"assets/produtos/sleevecentral.jpg", stock: 18 }
 ];
 
 // Cupons de desconto — chave é o código (o cliente pode digitar em
