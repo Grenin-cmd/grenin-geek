@@ -19,20 +19,20 @@ const CATEGORIES = {
 // O campo "stock" é a quantidade em estoque: quando chegar a 0, o produto
 // aparece com o selo "Esgotado" e o botão de adicionar ao carrinho é desativado.
 const PRODUCTS = [
-  { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/produtos/box-clefable.jpg", stock: 1 },
-  { name: "Coleção Arco-Íris Evoluções Prismáticas", category: "pokemon-tcg", price: 210, desc: "Caixa fechada, 10 pacotes.", image: "assets/produtos/box-eevee.jpg", stock: 1 },
-  { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-escuridão.jpg", stock: 2 },
-  { name: "Blister Triplo Caos Ascendente", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-caos.jpg", stock: 2 },
-  { name: "Bleach Remix Vol. 2", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach2.jpg", stock: 1 },
-  { name: "Bleach Remix Vol. 3", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach3.jpg", stock: 1 },
-  { name: "Bleach Remix Vol. 4", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach4.jpg", stock: 1 },
-  { name: "Bleach Remix Vol. 5", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach5.jpg", stock: 1 },
-  { name: "Radiant Vol. 14", category: "mangas", price: 27, desc: "Usado.", image: "assets/produtos/radiand14.jpg", stock: 1 },
-  { name: "Vagabond Vol. 1", category: "mangas", price: 36.50, desc: "Novo.", image: "assets/produtos/vagabond1.jpg", stock: 1 },
-  { name: "Gantz Vol. 3", category: "mangas", price: 27, desc: "Novo.", image: "assets/produtos/gantz3.jpg", stock: 1 },
-  { name: "Gantz Vol. 4", category: "mangas", price: 45, desc: "Novo.", image: "assets/produtos/gantz4.jpg", stock: 1 },
-  { name: "Noragami Vol. 23", category: "mangas", price: 22.99, desc: "Usado.", image: "assets/produtos/noragami23.jpg", stock: 1 },
-  { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG.", stock: 18 }
+  { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/produtos/box-clefable.jpg", stock: 10 },
+  { name: "Coleção Arco-Íris Evoluções Prismáticas", category: "pokemon-tcg", price: 210, desc: "Caixa fechada, 10 pacotes.", image: "assets/produtos/box-eevee.jpg", stock: 10 },
+  { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-escuridão.jpg", stock: 10 },
+  { name: "Blister Triplo Caos Ascendente", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-caos.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 2", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach2.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 3", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach3.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 4", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach4.jpg", stock: 10 },
+  { name: "Bleach Remix Vol. 5", category: "mangas", price: 45, desc: "Usado.", image: "assets/produtos/bleach5.jpg", stock: 10 },
+  { name: "Radiant Vol. 14", category: "mangas", price: 27, desc: "Usado.", image: "assets/produtos/radiand14.jpg", stock: 10 },
+  { name: "Vagabond Vol. 1", category: "mangas", price: 36.50, desc: "Novo.", image: "assets/produtos/vagabond1.jpg", stock: 10 },
+  { name: "Gantz Vol. 3", category: "mangas", price: 27, desc: "Novo.", image: "assets/produtos/gantz3.jpg", stock: 10 },
+  { name: "Gantz Vol. 4", category: "mangas", price: 45, desc: "Novo.", image: "assets/produtos/gantz4.jpg", stock: 10 },
+  { name: "Noragami Vol. 23", category: "mangas", price: 22.99, desc: "Usado.", image: "assets/produtos/noragami23.jpg", stock: 10 },
+  { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG.", stock: 10 }
 ];
 
 // Cupons de desconto — chave é o código (o cliente pode digitar em
@@ -52,6 +52,11 @@ function formatBRL(value){
 
 function whatsappLink(message){
   return "https://wa.me/" + WHATSAPP_NUMBER + "?text=" + encodeURIComponent(message);
+}
+
+// Remove acentos e deixa em minúsculas, pra "colecao" encontrar "Coleção", por exemplo.
+function normalize(str){
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 /* =========================================================
@@ -96,6 +101,7 @@ function renderProducts(){
     const card = document.createElement("article");
     card.className = "card" + (outOfStock ? " out-of-stock" : "");
     card.dataset.category = p.category;
+    card.dataset.name = normalize(p.name);
     card.style.setProperty("--cardcolor", cat.color);
 
     const imageHtml = p.image
@@ -126,15 +132,24 @@ function renderProducts(){
     binder.appendChild(card);
   });
 
-  applyFilter(currentFilter);
+  applyFilters();
 }
 
-function applyFilter(filter){
-  currentFilter = filter;
+let currentSearch = "";
+const noResultsEl = document.getElementById("noResults");
+
+function applyFilters(){
+  let visibleCount = 0;
+
   document.querySelectorAll(".card").forEach((card) => {
-    const show = filter === "all" || card.dataset.category === filter;
+    const matchesCategory = currentFilter === "all" || card.dataset.category === currentFilter;
+    const matchesSearch = !currentSearch || card.dataset.name.includes(currentSearch);
+    const show = matchesCategory && matchesSearch;
     card.classList.toggle("is-hidden", !show);
+    if(show) visibleCount++;
   });
+
+  noResultsEl.style.display = visibleCount === 0 ? "block" : "none";
 }
 
 tabs.addEventListener("click", (e) => {
@@ -142,7 +157,14 @@ tabs.addEventListener("click", (e) => {
   if(!btn) return;
   tabs.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
   btn.classList.add("active");
-  applyFilter(btn.dataset.filter);
+  currentFilter = btn.dataset.filter;
+  applyFilters();
+});
+
+const searchInput = document.getElementById("searchInput");
+searchInput.addEventListener("input", () => {
+  currentSearch = normalize(searchInput.value.trim());
+  applyFilters();
 });
 
 const sortSelect = document.getElementById("sortSelect");
@@ -209,8 +231,29 @@ function bumpCartButton(){
   cartButton.classList.add("bump");
 }
 
+function getCartQuantity(index){
+  const item = cart.find((i) => i.index === index);
+  return item ? item.quantity : 0;
+}
+
 function addToCart(index, btnEl){
   const product = PRODUCTS[index];
+  const currentQty = getCartQuantity(index);
+
+  // Não deixa adicionar além do que existe em estoque
+  if(currentQty >= product.stock){
+    if(btnEl){
+      const original = btnEl.textContent;
+      btnEl.classList.add("limit");
+      btnEl.textContent = "Limite em estoque!";
+      setTimeout(() => {
+        btnEl.classList.remove("limit");
+        btnEl.textContent = original;
+      }, 1200);
+    }
+    return;
+  }
+
   const existing = cart.find((item) => item.index === index);
 
   if(existing){
@@ -238,6 +281,13 @@ function addToCart(index, btnEl){
 function changeQuantity(index, delta){
   const item = cart.find((i) => i.index === index);
   if(!item) return;
+
+  const product = PRODUCTS[item.index];
+
+  // Não deixa aumentar além do que existe em estoque
+  if(delta > 0 && item.quantity >= product.stock){
+    return;
+  }
 
   item.quantity += delta;
   if(item.quantity <= 0){
@@ -290,6 +340,9 @@ function updateCart(){
       ? `<img src="${product.image}" alt="${product.name}">`
       : "";
 
+    const atLimit = item.quantity >= product.stock;
+    const limitMessage = atLimit ? `<p class="cart-item-limit">Limite em estoque atingido</p>` : "";
+
     return `
       <div class="cart-item">
         ${imageHtml}
@@ -299,9 +352,10 @@ function updateCart(){
           <div class="cart-controls">
             <button type="button" data-action="dec" data-index="${item.index}" aria-label="Diminuir quantidade">−</button>
             <span>${item.quantity}</span>
-            <button type="button" data-action="inc" data-index="${item.index}" aria-label="Aumentar quantidade">+</button>
+            <button type="button" data-action="inc" data-index="${item.index}" aria-label="Aumentar quantidade" ${atLimit ? "disabled" : ""}>+</button>
             <button type="button" data-action="remove" data-index="${item.index}" aria-label="Remover item">🗑️</button>
           </div>
+          ${limitMessage}
         </div>
       </div>
     `;
