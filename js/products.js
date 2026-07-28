@@ -13,6 +13,6 @@
 { name: "Gantz Vol. 3", category: "mangas", price: 27, desc: "Novo.", image:"assets/produtos/gantz3.jpg" },
 { name: "Gantz Vol. 4", category: "mangas", price: 45, desc: "Novo.", image:"assets/produtos/gantz4.jpg" },
 { name: "Noragami Vol. 23", category: "mangas", price: 22.99, desc: "Usado.", image:"assets/produtos/noragami23.jpg" }, },
-    { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG." },
+    { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG.", image:"assets/produtos/sleevecentral.jpg" },
   ];
 
