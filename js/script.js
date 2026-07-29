@@ -105,8 +105,10 @@ function renderProducts(){
     card.style.setProperty("--cardcolor", cat.color);
 
     const imageHtml = p.image
-      ? `<img src="${p.image}" alt="${p.name}">`
+      ? `<img src="${p.image}" alt="${p.name}" loading="lazy">`
       : "Imagem do produto";
+
+    const cardImgClass = "card-img" + (p.image ? " has-photo" : "");
 
     const stockBadgeHtml = outOfStock ? `<span class="stock-badge">Esgotado</span>` : "";
 
@@ -118,7 +120,7 @@ function renderProducts(){
       <div class="card-top">
         <span class="type-label"><span class="dot"></span>${cat.label}</span>
       </div>
-      <div class="card-img">${imageHtml}${stockBadgeHtml}</div>
+      <div class="${cardImgClass}">${imageHtml}${stockBadgeHtml}</div>
       <h3>${p.name}</h3>
       <p class="desc">${p.desc}</p>
       <div class="card-stats">
@@ -132,7 +134,24 @@ function renderProducts(){
     binder.appendChild(card);
   });
 
+  initImageSkeletons();
   applyFilters();
+}
+
+// Assim que cada foto termina de carregar (ou dá erro), tira o efeito
+// de "brilho passando" e mostra a imagem de verdade.
+function initImageSkeletons(){
+  document.querySelectorAll(".card-img.has-photo img").forEach((img) => {
+    const wrapper = img.closest(".card-img");
+    const markLoaded = () => wrapper.classList.add("is-loaded");
+
+    if(img.complete && img.naturalWidth > 0){
+      markLoaded();
+    } else {
+      img.addEventListener("load", markLoaded, { once: true });
+      img.addEventListener("error", markLoaded, { once: true });
+    }
+  });
 }
 
 let currentSearch = "";
