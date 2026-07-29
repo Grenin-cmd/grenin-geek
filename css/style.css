@@ -778,26 +778,38 @@ footer{
   background: var(--ink-3);
   border: 1.5px solid transparent;
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 14px 16px;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  text-transform: uppercase;
+  font-size: 1.1rem;
+  letter-spacing: 0.03em;
+  min-height: 48px;
 }
 .cart-coupon input:focus-visible{ outline: none; border-color: var(--type-electric); }
-.cart-coupon input::placeholder{ text-transform: none; color: var(--text-dim); }
+.cart-coupon input::placeholder{ text-transform: none; color: var(--text-dim); font-size: 0.95rem; }
 .cart-coupon button{
   background: var(--gold);
   color: #1a1200;
   border: none;
   border-radius: 10px;
-  padding: 10px 16px;
+  padding: 10px 18px;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   cursor: pointer;
   transition: transform .15s ease;
+  min-height: 48px;
+  white-space: nowrap;
 }
 .cart-coupon button:hover{ transform: translateY(-1px); }
+
+@media (max-width: 480px){
+  .cart-coupon{
+    flex-direction: column;
+  }
+  .cart-coupon button{
+    width: 100%;
+  }
+}
 
 .coupon-message{
   font-size: 0.78rem;
