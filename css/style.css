@@ -775,15 +775,17 @@ footer{
 .cart-coupon input{
   flex: 1;
   min-width: 0;
-  background: var(--ink-3);
-  border: 1.5px solid transparent;
+  width: 100%;
+  background: var(--ink);
+  border: 1.5px solid var(--ink-3);
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 1.1rem;
-  letter-spacing: 0.03em;
-  min-height: 48px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-height: 52px;
 }
 .cart-coupon input:focus-visible{ outline: none; border-color: var(--type-electric); }
 .cart-coupon input::placeholder{ text-transform: none; color: var(--text-dim); font-size: 0.95rem; }
