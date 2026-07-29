@@ -870,3 +870,55 @@ footer{
 .btn-cart.limit{
   background: #b42318;
 }
+
+/* ---------- ZOOM NA IMAGEM (LIGHTBOX) ---------- */
+.card-img{ cursor: zoom-in; }
+.card-img img{ transition: transform .2s ease; }
+.card-img:hover img{ transform: scale(1.03); }
+
+.lightbox{
+  position: fixed;
+  inset: 0;
+  background: rgba(8,7,15,0.88);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .25s ease, visibility .25s ease;
+  z-index: 200;
+  padding: 40px;
+}
+.lightbox.active{
+  opacity: 1;
+  visibility: visible;
+}
+.lightbox img{
+  max-width: min(600px, 90vw);
+  max-height: 85vh;
+  width: auto;
+  border-radius: 14px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  background: #fff;
+  cursor: default;
+}
+.lightbox-close{
+  position: absolute;
+  top: 22px;
+  right: 26px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ink-3);
+  color: var(--text);
+  font-size: 20px;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.lightbox-close:hover{ background: var(--ink); }
+
+@media (max-width: 480px){
+  .lightbox{ padding: 16px; }
+  .lightbox-close{ top: 12px; right: 12px; }
+}
