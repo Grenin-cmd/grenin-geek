@@ -968,3 +968,104 @@ footer{
 @media (prefers-reduced-motion: reduce){
   .card-img.has-photo::before{ animation: none; }
 }
+
+/* =========================================================
+   AJUSTES GERAIS DE MOBILE
+   Um bloco só, no final do arquivo, reunindo todos os ajustes
+   pra tela pequena — mais fácil de manter do que espalhado.
+   ========================================================= */
+
+@media (max-width: 640px){
+
+  .wrap{ padding: 0 16px; }
+
+  /* ---------- HEADER ---------- */
+  .header-inner{
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+    padding: 14px 16px;
+    gap: 10px;
+  }
+  .logo{ font-size: 1.1rem; }
+  .header-actions{
+    width: 100%;
+    justify-content: center;
+  }
+  .header-cta{
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{ padding: 48px 0 32px; }
+  .hero-logo{ width: 84px; height: 84px; margin-bottom: 14px; }
+  .hero h1{ font-size: clamp(2rem, 11vw, 2.8rem); }
+  .hero p.sub{ font-size: 0.95rem; padding: 0 4px; }
+  .hero-actions{ flex-direction: column; align-items: stretch; }
+  .btn-primary, .btn-ghost{ text-align: center; }
+
+  /* ---------- CABEÇALHO DO CATÁLOGO (busca + ordenar) ---------- */
+  .catalog-head{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .search-input{
+    min-width: 0;
+    width: 100%;
+  }
+  .sort-control{
+    margin-left: 0;
+    width: 100%;
+  }
+  .sort-control select{
+    flex: 1;
+  }
+
+  /* ---------- ABAS DE CATEGORIA (rolagem horizontal) ---------- */
+  .tabs{
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 22px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar{ display: none; }
+  .tab{
+    flex-shrink: 0;
+  }
+
+  /* ---------- GRADE DE PRODUTOS ---------- */
+  .binder{
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 16px;
+  }
+  .card{ padding: 10px; }
+
+  /* ---------- SOBRE ---------- */
+  .about{ padding: 56px 0; }
+  .about-panel{ padding: 28px 20px; }
+  .about h2{ font-size: 1.5rem; }
+  .about-visual{ max-width: 260px; }
+
+  /* ---------- RODAPÉ ---------- */
+  .footer-inner{ flex-direction: column; gap: 18px; }
+
+  /* ---------- CARRINHO ---------- */
+  .cart-header{ padding: 18px 16px; }
+  #cartItems{ padding: 14px; }
+  .cart-footer{ padding: 16px; }
+  .cart-item{ padding: 12px; gap: 10px; }
+  .cart-item img{ width: 56px; height: 56px; }
+  .cart-controls button{
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  /* ---------- LOJA ---------- */
+  .product-buttons{ gap: 8px; }
+}
