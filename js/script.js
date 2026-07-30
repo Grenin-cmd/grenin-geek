@@ -61,6 +61,13 @@ function normalize(str){
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+// Cada produto ganha um "id" fixo baseado no nome — diferente da posição
+// na lista (que muda toda vez que um produto novo é inserido no meio),
+// o nome não muda, então é seguro usar como identidade no carrinho.
+PRODUCTS.forEach((p) => { p.id = normalize(p.name); });
+const PRODUCTS_BY_ID = {};
+PRODUCTS.forEach((p) => { PRODUCTS_BY_ID[p.id] = p; });
+
 /* =========================================================
    CATÁLOGO
    ========================================================= */
@@ -96,7 +103,7 @@ function getSortedProducts(){
 
 function renderProducts(){
   binder.innerHTML = "";
-  getSortedProducts().forEach(({ p, originalIndex }) => {
+  getSortedProducts().forEach(({ p }) => {
     const cat = CATEGORIES[p.category];
     const outOfStock = p.stock === 0;
 
@@ -116,7 +123,7 @@ function renderProducts(){
 
     const cartButtonHtml = outOfStock
       ? `<button type="button" class="btn-cart" disabled>Esgotado</button>`
-      : `<button type="button" class="btn-cart" data-index="${originalIndex}">🛒 Adicionar ao Carrinho</button>`;
+      : `<button type="button" class="btn-cart" data-id="${p.id}">🛒 Adicionar ao Carrinho</button>`;
 
     card.innerHTML = `
       <div class="card-top">
@@ -199,7 +206,7 @@ sortSelect.addEventListener("change", () => {
 binder.addEventListener("click", (e) => {
   const btn = e.target.closest(".btn-cart");
   if(!btn) return;
-  addToCart(Number(btn.dataset.index), btn);
+  addToCart(btn.dataset.id, btn);
 });
 
 /* =========================================================
@@ -208,6 +215,11 @@ binder.addEventListener("click", (e) => {
 
 const CART_STORAGE_KEY = "grenin-cart";
 let cart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY)) || [];
+
+// Descarta qualquer item de carrinho salvo antes dessa correção (o sistema
+// antigo guardava a posição do produto na lista, não o nome — se a lista
+// mudar de ordem, essa posição vira referência de outro produto).
+cart = cart.filter((item) => item && typeof item.id === "string" && PRODUCTS_BY_ID[item.id]);
 
 const cartButton = document.getElementById("cartButton");
 const cartSidebar = document.getElementById("cartSidebar");
@@ -252,14 +264,14 @@ function bumpCartButton(){
   cartButton.classList.add("bump");
 }
 
-function getCartQuantity(index){
-  const item = cart.find((i) => i.index === index);
+function getCartQuantity(id){
+  const item = cart.find((i) => i.id === id);
   return item ? item.quantity : 0;
 }
 
-function addToCart(index, btnEl){
-  const product = PRODUCTS[index];
-  const currentQty = getCartQuantity(index);
+function addToCart(id, btnEl){
+  const product = PRODUCTS_BY_ID[id];
+  const currentQty = getCartQuantity(id);
 
   // Não deixa adicionar além do que existe em estoque
   if(currentQty >= product.stock){
@@ -275,12 +287,12 @@ function addToCart(index, btnEl){
     return;
   }
 
-  const existing = cart.find((item) => item.index === index);
+  const existing = cart.find((item) => item.id === id);
 
   if(existing){
     existing.quantity += 1;
   } else {
-    cart.push({ index: index, quantity: 1 });
+    cart.push({ id: id, quantity: 1 });
   }
 
   saveCart();
@@ -299,11 +311,11 @@ function addToCart(index, btnEl){
   }
 }
 
-function changeQuantity(index, delta){
-  const item = cart.find((i) => i.index === index);
+function changeQuantity(id, delta){
+  const item = cart.find((i) => i.id === id);
   if(!item) return;
 
-  const product = PRODUCTS[item.index];
+  const product = PRODUCTS_BY_ID[item.id];
 
   // Não deixa aumentar além do que existe em estoque
   if(delta > 0 && item.quantity >= product.stock){
@@ -312,15 +324,15 @@ function changeQuantity(index, delta){
 
   item.quantity += delta;
   if(item.quantity <= 0){
-    cart = cart.filter((i) => i.index !== index);
+    cart = cart.filter((i) => i.id !== id);
   }
 
   saveCart();
   updateCart();
 }
 
-function removeFromCart(index){
-  cart = cart.filter((i) => i.index !== index);
+function removeFromCart(id){
+  cart = cart.filter((i) => i.id !== id);
   saveCart();
   updateCart();
 }
@@ -329,15 +341,15 @@ function removeFromCart(index){
 cartItemsEl.addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-action]");
   if(!btn) return;
-  const index = Number(btn.dataset.index);
+  const id = btn.dataset.id;
   const action = btn.dataset.action;
-  if(action === "inc") changeQuantity(index, 1);
-  if(action === "dec") changeQuantity(index, -1);
-  if(action === "remove") removeFromCart(index);
+  if(action === "inc") changeQuantity(id, 1);
+  if(action === "dec") changeQuantity(id, -1);
+  if(action === "remove") removeFromCart(id);
 });
 
 function cartSubtotal(){
-  return cart.reduce((sum, item) => sum + PRODUCTS[item.index].price * item.quantity, 0);
+  return cart.reduce((sum, item) => sum + PRODUCTS_BY_ID[item.id].price * item.quantity, 0);
 }
 
 function updateCart(){
@@ -353,7 +365,7 @@ function updateCart(){
   let count = 0;
 
   cartItemsEl.innerHTML = cart.map((item) => {
-    const product = PRODUCTS[item.index];
+    const product = PRODUCTS_BY_ID[item.id];
     const subtotal = product.price * item.quantity;
     count += item.quantity;
 
@@ -371,10 +383,10 @@ function updateCart(){
           <h4>${product.name}</h4>
           <p>${formatBRL(product.price)} cada</p>
           <div class="cart-controls">
-            <button type="button" data-action="dec" data-index="${item.index}" aria-label="Diminuir quantidade">−</button>
+            <button type="button" data-action="dec" data-id="${item.id}" aria-label="Diminuir quantidade">−</button>
             <span>${item.quantity}</span>
-            <button type="button" data-action="inc" data-index="${item.index}" aria-label="Aumentar quantidade" ${atLimit ? "disabled" : ""}>+</button>
-            <button type="button" data-action="remove" data-index="${item.index}" aria-label="Remover item">🗑️</button>
+            <button type="button" data-action="inc" data-id="${item.id}" aria-label="Aumentar quantidade" ${atLimit ? "disabled" : ""}>+</button>
+            <button type="button" data-action="remove" data-id="${item.id}" aria-label="Remover item">🗑️</button>
           </div>
           ${limitMessage}
         </div>
@@ -429,7 +441,7 @@ finishOrderBtn.addEventListener("click", () => {
   }
 
   const lines = cart.map((item) => {
-    const product = PRODUCTS[item.index];
+    const product = PRODUCTS_BY_ID[item.id];
     const subtotal = product.price * item.quantity;
     return `${item.quantity}x ${product.name} - ${formatBRL(subtotal)}`;
   }).join("\n");
@@ -455,7 +467,7 @@ questionOrderBtn.addEventListener("click", () => {
     return;
   }
 
-  const lines = cart.map((item) => "- " + PRODUCTS[item.index].name).join("\n");
+  const lines = cart.map((item) => "- " + PRODUCTS_BY_ID[item.id].name).join("\n");
   const message =
     `Olá! Tenho dúvidas sobre os seguintes produtos:\n${lines}`;
 
