@@ -41,7 +41,9 @@ const PRODUCTS = [
 // qualquer maiúscula/minúscula), valor é o percentual de desconto.
 const COUPONS = {
   "GRENIN10": 0.10,
-  "BEMVINDO5": 0.05
+  "BEMVINDO5": 0.05,
+   "MESTREDASEMANA": 0.15,
+   "TREINADOR10": 0.10
 };
 
 /* =========================================================
