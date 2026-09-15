@@ -43,7 +43,7 @@ No painel do Supabase:
 
 O arquivo `supabase/config.toml` também registra `verify_jwt = false` para deploy feito pela CLI.
 
-Configure o segredo `SUPABASE_SERVICE_ROLE_KEY` na Edge Function com a chave de serviço do projeto. Nunca coloque essa chave no frontend ou no GitHub.
+Configure o segredo `STORE_SERVICE_ROLE_KEY` na Edge Function com a chave de serviço do projeto. Nunca coloque essa chave no frontend ou no GitHub.
 
 ## Painel administrativo
 
