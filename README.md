@@ -16,11 +16,11 @@
 
 3. Acesse `http://localhost:3000`.
 
-O arquivo `grenin.sqlite` é criado automaticamente na primeira execução. Ele contém as tabelas de clientes, produtos, pedidos, itens dos pedidos e sessões. O catálogo inicial também é inserido automaticamente no banco.
+O banco usado em produção é o PostgreSQL do Supabase. Na primeira execução, o servidor cria as tabelas de clientes, produtos, pedidos, itens dos pedidos e sessões. O catálogo inicial também é inserido automaticamente.
 
 ## Persistência em produção
 
-Para a conta funcionar em qualquer dispositivo, publique este servidor Node em um serviço com armazenamento persistente e mantenha o arquivo SQLite em um volume persistente. O frontend e a API devem ser acessados pelo mesmo domínio, ou a API deve configurar CORS.
+Para a conta funcionar em qualquer dispositivo, publique este servidor Node e configure `SUPABASE_DB_URL` com a conexão PostgreSQL do Supabase. O frontend e a API devem ser acessados pelo mesmo domínio, ou a API deve configurar CORS.
 
 Antes de publicar, defina `PORT` conforme o serviço:
 
@@ -39,7 +39,7 @@ O arquivo `render.yaml` já configura o serviço Node, o comando de inicializaç
 3. Defina `FRONTEND_ORIGIN` apenas se o frontend ficar em outro domínio, como `https://grenin-cmd.github.io`.
 4. Use a URL fornecida pelo Render para acessar a loja, por exemplo `https://grenin-geek-store.onrender.com`.
 
-O disco persistente do Render é necessário para o SQLite e pode depender de um plano pago. Sem ele, clientes, pedidos e estoque podem ser apagados quando o serviço for recriado.
+No Supabase, os dados ficam fora do Render e não dependem do disco local do serviço.
 
 Se o frontend continuar no GitHub Pages, altere `window.GRENIN_API_URL` em `index.html` para a URL do backend Render, sem a barra final. Nesse caso, configure `FRONTEND_ORIGIN` com a origem exata do GitHub Pages.
 
@@ -47,4 +47,10 @@ Se o frontend continuar no GitHub Pages, altere `window.GRENIN_API_URL` em `inde
 
 O cadastro existente de Victor Alexandre Pereira Carvalho, CPF `14517447650`, recebe automaticamente a função de administrador quando o servidor inicia. Basta entrar normalmente pela área da conta usando a senha já cadastrada; o painel **Produtos e estoque** aparecerá dentro da conta.
 
-No painel é possível alterar preço e estoque, adicionar produtos e desativar produtos do catálogo. Essas alterações são gravadas diretamente no SQLite e não exigem commit ou alteração de código.
+No painel é possível alterar preço e estoque, adicionar produtos e desativar produtos do catálogo. Essas alterações são gravadas diretamente no Supabase e não exigem commit ou alteração de código.
+
+### Configuração do Supabase
+
+No painel do Supabase, abra **Connect**, escolha **Node.js** e copie a conexão PostgreSQL. No Render, crie a variável secreta `SUPABASE_DB_URL` com esse valor. Não coloque essa URL no frontend, no GitHub ou no README.
+
+O banco Supabase começa vazio. Para manter o cadastro administrativo do Victor, crie primeiro a conta dele pela loja publicada com o mesmo CPF; o servidor reconhece esse CPF e atribui automaticamente a função de administrador.
