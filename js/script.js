@@ -272,6 +272,10 @@ const orderHistory = document.getElementById("orderHistory");
 const checkoutForm = document.getElementById("checkoutForm");
 const checkoutTotal = document.getElementById("checkoutTotal");
 const checkoutMessage = document.getElementById("checkoutMessage");
+const adminPanel = document.getElementById("adminPanel");
+const adminProducts = document.getElementById("adminProducts");
+const adminMessage = document.getElementById("adminMessage");
+const newProductForm = document.getElementById("newProductForm");
 
 let sessionToken = localStorage.getItem(SESSION_TOKEN_KEY) || "";
 let sessionUser = null;
@@ -333,7 +337,65 @@ async function renderAccount(){
   orderHistory.innerHTML = orders.length ? orders.slice().reverse().map((order) => `
     <article class="order-card"><div><strong>Pedido #${order.id}</strong><small>${order.date} · ${order.delivery === "shipping" ? "Envio" : "Retirada"}</small></div><b>${formatBRL(order.total)}</b><p>${order.items.map((item) => `${item.quantity}x ${item.name}`).join(" · ")}</p></article>
   `).join("") : `<p class="empty-history">Você ainda não fez nenhuma compra.</p>`;
+  adminPanel.classList.toggle("is-hidden", !user.isAdmin);
+  if(user.isAdmin) await renderAdminProducts();
 }
+
+async function renderAdminProducts(){
+  try {
+    const products = await apiRequest("/admin/products");
+    adminProducts.innerHTML = products.map((product) => `
+      <article class="admin-product ${product.active ? "" : "is-inactive"}" data-admin-product="${product.id}">
+        <div><strong>${product.name}</strong><small>${product.active ? "Ativo" : "Desativado"} · ${product.id}</small></div>
+        <label>Preço<input data-admin-price type="number" min="0" step="0.01" value="${product.price}"></label>
+        <label>Estoque<input data-admin-stock type="number" min="0" step="1" value="${product.stock}"></label>
+        <button type="button" data-admin-save>Salvar</button>
+        ${product.active ? `<button type="button" class="admin-delete" data-admin-delete>Desativar</button>` : ""}
+      </article>
+    `).join("");
+  } catch(error) {
+    setMessage(adminMessage, error.message, "error");
+  }
+}
+
+newProductForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(newProductForm);
+  try {
+    await apiRequest("/admin/products", { method: "POST", body: JSON.stringify(Object.fromEntries(data)) });
+    newProductForm.reset();
+    setMessage(adminMessage, "Produto adicionado.", "success");
+    await loadProducts();
+    renderProducts();
+    await renderAdminProducts();
+  } catch(error) {
+    setMessage(adminMessage, error.message, "error");
+  }
+});
+
+adminProducts.addEventListener("click", async (event) => {
+  const productCard = event.target.closest("[data-admin-product]");
+  if(!productCard) return;
+  const id = productCard.dataset.adminProduct;
+  try {
+    if(event.target.closest("[data-admin-save]")){
+      await apiRequest(`/admin/products/${id}`, { method: "PATCH", body: JSON.stringify({ price: Number(productCard.querySelector("[data-admin-price]").value), stock: Number(productCard.querySelector("[data-admin-stock]").value) }) });
+      setMessage(adminMessage, "Produto atualizado.", "success");
+      await loadProducts();
+      renderProducts();
+      await renderAdminProducts();
+    }
+    if(event.target.closest("[data-admin-delete]") && confirm("Desativar este produto do catálogo?")){
+      await apiRequest(`/admin/products/${id}`, { method: "DELETE" });
+      setMessage(adminMessage, "Produto desativado.", "success");
+      await loadProducts();
+      renderProducts();
+      await renderAdminProducts();
+    }
+  } catch(error) {
+    setMessage(adminMessage, error.message, "error");
+  }
+});
 
 function openAccount(){
   renderAccount();

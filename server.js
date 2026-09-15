@@ -52,6 +52,13 @@ database.exec(`
   );
 `);
 
+try {
+  database.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'customer'");
+} catch (error) {
+  if (!error.message.includes("duplicate column name")) throw error;
+}
+database.prepare("UPDATE users SET role = 'admin' WHERE cpf = ?").run("14517447650");
+
 const products = [
   ["box-mega-luar-clefable", "Box Mega Luar Clefable", "pokemon-tcg", 125, "Caixa fechada, 8 pacotes.", "assets/produtos/box-clefable.jpg", 1],
   ["colecao-arco-iris-evolucoes-prismaticas", "Coleção Arco-Íris Evoluções Prismáticas", "pokemon-tcg", 210, "Caixa fechada, 10 pacotes.", "assets/produtos/box-eevee.jpg", 1],
@@ -104,7 +111,7 @@ function verifyPassword(password, stored) {
   }));
 }
 function publicUser(user) {
-  return { id: user.id, name: user.name, cpf: user.cpf, cep: user.cep, street: user.street, neighborhood: user.neighborhood, number: user.number, complement: user.complement };
+  return { id: user.id, name: user.name, cpf: user.cpf, cep: user.cep, street: user.street, neighborhood: user.neighborhood, number: user.number, complement: user.complement, isAdmin: user.role === "admin" };
 }
 function createSession(userId) {
   const token = crypto.randomBytes(32).toString("hex");
@@ -122,6 +129,12 @@ function auth(request, response, next) {
   request.user = database.prepare("SELECT * FROM users WHERE id = ?").get(session.user_id);
   next();
 }
+function adminAuth(request, response, next) {
+  auth(request, response, () => {
+    if (request.user.role !== "admin") return response.status(403).json({ error: "Acesso restrito ao administrador." });
+    next();
+  });
+}
 function validateCustomer(body) {
   const required = ["name", "cpf", "cep", "street", "neighborhood", "number"];
   return required.every((field) => String(body[field] || "").trim()) && normalizeCpf(body.cpf).length === 11;
@@ -129,6 +142,35 @@ function validateCustomer(body) {
 
 app.get("/api/products", (request, response) => {
   response.json(database.prepare("SELECT id, name, category, price, description AS desc, image, stock FROM products WHERE active = 1 ORDER BY rowid").all());
+});
+
+app.get("/api/admin/products", adminAuth, (request, response) => {
+  response.json(database.prepare("SELECT id, name, category, price, description AS desc, image, stock, active FROM products ORDER BY rowid").all());
+});
+
+app.patch("/api/admin/products/:id", adminAuth, (request, response) => {
+  const { price, stock } = request.body;
+  if (!Number.isFinite(Number(price)) || Number(price) < 0 || !Number.isInteger(Number(stock)) || Number(stock) < 0) return response.status(400).json({ error: "Preço ou estoque inválido." });
+  const result = database.prepare("UPDATE products SET price = ?, stock = ? WHERE id = ?").run(Number(price), Number(stock), request.params.id);
+  if (!result.changes) return response.status(404).json({ error: "Produto não encontrado." });
+  response.json({ success: true });
+});
+
+app.post("/api/admin/products", adminAuth, (request, response) => {
+  const { id, name, category, price, desc, image, stock } = request.body;
+  if (!id || !name || !category || !Number.isFinite(Number(price)) || Number(price) < 0 || !Number.isInteger(Number(stock)) || Number(stock) < 0) return response.status(400).json({ error: "Preencha os dados do produto corretamente." });
+  try {
+    database.prepare("INSERT INTO products (id, name, category, price, description, image, stock) VALUES (?, ?, ?, ?, ?, ?, ?)").run(id, name.trim(), category, Number(price), String(desc || "").trim(), String(image || "").trim(), Number(stock));
+    response.status(201).json({ success: true });
+  } catch (error) {
+    response.status(error.code === "SQLITE_CONSTRAINT_PRIMARYKEY" ? 409 : 400).json({ error: error.code === "SQLITE_CONSTRAINT_PRIMARYKEY" ? "Já existe um produto com esse ID." : "Não foi possível adicionar o produto." });
+  }
+});
+
+app.delete("/api/admin/products/:id", adminAuth, (request, response) => {
+  const result = database.prepare("UPDATE products SET active = 0 WHERE id = ?").run(request.params.id);
+  if (!result.changes) return response.status(404).json({ error: "Produto não encontrado." });
+  response.json({ success: true });
 });
 
 app.post("/api/auth/register", async (request, response) => {
