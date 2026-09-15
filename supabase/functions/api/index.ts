@@ -61,7 +61,7 @@ Deno.serve(async (request) => {
     const body = request.method === "GET" ? {} : await request.json().catch(() => ({}));
 
     if (request.method === "GET" && path === "products") {
-      const { data, error } = await supabase.from("products").select("id,name,category,price,description:desc,image,stock").eq("active", true).order("id");
+      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock").eq("active", true).order("id");
       if (error) throw error;
       return json(data?.map((product) => ({ ...product, price: Number(product.price) })) || []);
     }
@@ -89,7 +89,7 @@ Deno.serve(async (request) => {
 
     if (path === "me" && request.method === "GET") return json({ user: publicUser(user) });
     if (path === "orders" && request.method === "GET") {
-      const { data: orders, error } = await supabase.from("orders").select("id,delivery,total,created_at,order_items(product_name:name,quantity)").eq("user_id", user.id).order("id", { ascending: false });
+      const { data: orders, error } = await supabase.from("orders").select("id,delivery,total,created_at,order_items(name:product_name,quantity)").eq("user_id", user.id).order("id", { ascending: false });
       if (error) throw error;
       return json(orders?.map((order) => ({ ...order, total: Number(order.total), date: new Date(order.created_at).toLocaleDateString("pt-BR"), items: order.order_items })) || []);
     }
@@ -100,7 +100,7 @@ Deno.serve(async (request) => {
     }
 
     if (path === "admin/products" && request.method === "GET") {
-      const { data, error } = await supabase.from("products").select("id,name,category,price,description:desc,image,stock,active").order("id");
+      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,active").order("id");
       if (error) throw error;
       return json(data?.map((product) => ({ ...product, price: Number(product.price) })) || []);
     }
