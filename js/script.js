@@ -72,7 +72,7 @@ PRODUCTS.forEach((p) => { PRODUCTS_BY_ID[p.id] = p; });
 
 const configuredApiUrl = window.GRENIN_API_URL || "";
 const API_BASE = configuredApiUrl
-  ? configuredApiUrl.replace(/\/$/, "") + "/api"
+  ? configuredApiUrl.replace(/\/$/, "")
   : window.location.protocol === "file:" || window.location.port === "8000"
   ? "http://localhost:3000/api"
   : "/api";

@@ -47,7 +47,12 @@ async function authenticate(request: Request) {
   const { data } = await supabase.from("sessions").select("user_id, users(*)").eq("token_hash", await tokenHash(token)).gt("expires_at", new Date().toISOString()).maybeSingle();
   return data?.users || null;
 }
-function route(request: Request) { return new URL(request.url).pathname.replace(/^\/api\/?/, "").replace(/^\/?/, ""); }
+function route(request: Request) {
+  return new URL(request.url).pathname
+    .replace(/^\/functions\/v1\/api\/?/, "")
+    .replace(/^\/api\/?/, "")
+    .replace(/^\/?/, "");
+}
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
