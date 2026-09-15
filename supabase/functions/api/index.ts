@@ -70,7 +70,10 @@ Deno.serve(async (request) => {
       const cpf = normalizeCpf(body.cpf);
       if (!body.name || cpf.length !== 11 || !body.cep || !body.street || !body.neighborhood || !body.number || String(body.password || "").length < 4) return json({ error: "Preencha os dados obrigatórios e uma senha de pelo menos 4 caracteres." }, 400);
       const { data: user, error } = await supabase.from("users").insert({ name: body.name.trim(), cpf, cep: body.cep.trim(), street: body.street.trim(), neighborhood: body.neighborhood.trim(), number: body.number.trim(), complement: String(body.complement || "").trim(), password_hash: await passwordHash(body.password), role: cpf === adminCpf ? "admin" : "customer" }).select().single();
-      if (error) return json({ error: error.code === "23505" ? "Este CPF já possui uma conta." : "Não foi possível criar a conta." }, error.code === "23505" ? 409 : 500);
+      if (error) {
+        console.error("REGISTER_ERROR", error);
+        return json({ error: error.code === "23505" ? "Este CPF já possui uma conta." : "Não foi possível criar a conta." }, error.code === "23505" ? 409 : 500);
+      }
       return json({ user: publicUser(user), token: await createSession(user.id) }, 201);
     }
 
