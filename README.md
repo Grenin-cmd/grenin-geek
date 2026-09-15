@@ -20,7 +20,7 @@ O banco usado em produção é o PostgreSQL do Supabase. Na primeira execução,
 
 ## Persistência em produção
 
-Para a conta funcionar em qualquer dispositivo, publique este servidor Node e configure `SUPABASE_DB_URL` com a conexão PostgreSQL do Supabase. O frontend e a API devem ser acessados pelo mesmo domínio, ou a API deve configurar CORS.
+Para a conta funcionar em qualquer dispositivo, use o PostgreSQL e as Edge Functions do Supabase. O GitHub Pages hospeda o frontend e a Edge Function hospeda a API.
 
 Antes de publicar, defina `PORT` conforme o serviço:
 
@@ -30,18 +30,17 @@ PORT=3000 npm start
 
 O cadastro e login usam senha protegida com `scrypt`; o navegador guarda somente um token de sessão. Produtos e estoque são lidos do endpoint `/api/products`, enquanto pedidos usam `/api/orders`.
 
-### Publicar no Render
+### Publicar no Supabase
 
-O arquivo `render.yaml` já configura o serviço Node, o comando de inicialização e um disco persistente em `/var/data`. No Render:
+No painel do Supabase:
 
-1. Crie um **Blueprint** conectado a este repositório.
-2. Confirme o arquivo `render.yaml`.
-3. Defina `FRONTEND_ORIGIN` apenas se o frontend ficar em outro domínio, como `https://grenin-cmd.github.io`.
-4. Use a URL fornecida pelo Render para acessar a loja, por exemplo `https://grenin-geek-store.onrender.com`.
+1. Abra **SQL Editor**, crie uma query e execute `supabase/migrations/001_store.sql`.
+2. Abra **Edge Functions**, crie uma função chamada `api` e use o conteúdo de `supabase/functions/api/index.ts`.
+3. Publique a função.
+4. Troque `SEU_PROJECT_REF` no `index.html` pelo identificador do seu projeto.
+5. Faça commit e aguarde o GitHub Pages atualizar.
 
-No Supabase, os dados ficam fora do Render e não dependem do disco local do serviço.
-
-Se o frontend continuar no GitHub Pages, altere `window.GRENIN_API_URL` em `index.html` para a URL do backend Render, sem a barra final. Nesse caso, configure `FRONTEND_ORIGIN` com a origem exata do GitHub Pages.
+Configure o segredo `SUPABASE_SERVICE_ROLE_KEY` na Edge Function com a chave de serviço do projeto. Nunca coloque essa chave no frontend ou no GitHub.
 
 ## Painel administrativo
 
@@ -51,6 +50,6 @@ No painel é possível alterar preço e estoque, adicionar produtos e desativar 
 
 ### Configuração do Supabase
 
-No painel do Supabase, abra **Connect**, escolha **Node.js** e copie a conexão PostgreSQL. No Render, crie a variável secreta `SUPABASE_DB_URL` com esse valor. Não coloque essa URL no frontend, no GitHub ou no README.
+O banco Supabase começa vazio. Execute a migration SQL antes de publicar a função.
 
-O banco Supabase começa vazio. Para manter o cadastro administrativo do Victor, crie primeiro a conta dele pela loja publicada com o mesmo CPF; o servidor reconhece esse CPF e atribui automaticamente a função de administrador.
+Para manter o cadastro administrativo do Victor, crie a conta dele pela loja publicada com o CPF `14517447650`; a Edge Function atribui automaticamente a função de administrador.
