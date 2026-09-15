@@ -18,7 +18,7 @@ const CATEGORIES = {
 // O campo "image" é opcional: se não tiver, aparece um placeholder colorido no lugar da foto.
 // O campo "stock" é a quantidade em estoque: quando chegar a 0, o produto
 // aparece com o selo "Esgotado" e o botão de adicionar ao carrinho é desativado.
-const PRODUCTS = [
+let PRODUCTS = [
   { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/produtos/box-clefable.jpg", stock: 0 },
   { name: "Coleção Arco-Íris Evoluções Prismáticas", category: "pokemon-tcg", price: 210, desc: "Caixa fechada, 10 pacotes.", image: "assets/produtos/box-eevee.jpg", stock: 0 },
   { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-escuridão.jpg", stock: 1 },
@@ -67,8 +67,23 @@ function normalize(str){
 // na lista (que muda toda vez que um produto novo é inserido no meio),
 // o nome não muda, então é seguro usar como identidade no carrinho.
 PRODUCTS.forEach((p) => { p.id = normalize(p.name); });
-const PRODUCTS_BY_ID = {};
+let PRODUCTS_BY_ID = {};
 PRODUCTS.forEach((p) => { PRODUCTS_BY_ID[p.id] = p; });
+
+const API_BASE = window.location.protocol === "file:" || window.location.port === "8000"
+  ? "http://localhost:3000/api"
+  : "/api";
+const SESSION_TOKEN_KEY = "grenin-session-token";
+
+async function loadProducts(){
+  const response = await fetch(`${API_BASE}/products`);
+  if(!response.ok) throw new Error("Não foi possível carregar os produtos.");
+  PRODUCTS = await response.json();
+  PRODUCTS_BY_ID = {};
+  PRODUCTS.forEach((product) => { PRODUCTS_BY_ID[product.id] = product; });
+  cart = cart.filter((item) => PRODUCTS_BY_ID[item.id]);
+  saveCart();
+}
 
 /* =========================================================
    CATÁLOGO
@@ -241,6 +256,149 @@ const applyCouponBtn = document.getElementById("applyCoupon");
 const couponMessageEl = document.getElementById("couponMessage");
 
 let appliedCoupon = null; // { code, percent } ou null se nenhum cupom aplicado
+
+const accountButton = document.getElementById("accountButton");
+const accountLabel = document.getElementById("accountLabel");
+const accountModal = document.getElementById("accountModal");
+const checkoutModal = document.getElementById("checkoutModal");
+const authView = document.getElementById("authView");
+const accountView = document.getElementById("accountView");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+const loginMessage = document.getElementById("loginMessage");
+const registerMessage = document.getElementById("registerMessage");
+const accountSummary = document.getElementById("accountSummary");
+const orderHistory = document.getElementById("orderHistory");
+const checkoutForm = document.getElementById("checkoutForm");
+const checkoutTotal = document.getElementById("checkoutTotal");
+const checkoutMessage = document.getElementById("checkoutMessage");
+
+let sessionToken = localStorage.getItem(SESSION_TOKEN_KEY) || "";
+let sessionUser = null;
+
+async function apiRequest(endpoint, options = {}){
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if(sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  } catch(error) {
+    throw new Error("A API está desligada. Execute `npm start` no terminal e acesse http://localhost:3000.");
+  }
+  const data = await response.json().catch(() => ({}));
+  if(!response.ok) throw new Error(data.error || "Não foi possível concluir a operação.");
+  return data;
+}
+
+function normalizeCpf(cpf){
+  return cpf.replace(/\D/g, "");
+}
+
+function currentUser(){
+  return sessionUser;
+}
+
+function setMessage(element, message, type){
+  element.textContent = message;
+  element.className = "form-message" + (type ? " " + type : "");
+}
+
+function openModal(modal){
+  modal.classList.add("active");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+}
+
+function closeModal(modal){
+  modal.classList.remove("active");
+  modal.setAttribute("aria-hidden", "true");
+  if(!document.querySelector(".modal-backdrop.active")) document.body.style.overflow = "";
+}
+
+async function renderAccount(){
+  const user = currentUser();
+  accountLabel.textContent = user ? user.name.split(" ")[0] : "Entrar";
+  authView.classList.toggle("is-hidden", Boolean(user));
+  accountView.classList.toggle("is-hidden", !user);
+
+  if(!user) return;
+  accountSummary.innerHTML = `<strong>${user.name}</strong><span>CPF ${user.cpf}</span><small>${user.street}, ${user.number} · ${user.neighborhood} · CEP ${user.cep}</small>`;
+  let orders = [];
+  try {
+    orders = await apiRequest("/orders");
+  } catch(error) {
+    orderHistory.innerHTML = `<p class="empty-history">Não foi possível carregar seu histórico agora.</p>`;
+    return;
+  }
+  orderHistory.innerHTML = orders.length ? orders.slice().reverse().map((order) => `
+    <article class="order-card"><div><strong>Pedido #${order.id}</strong><small>${order.date} · ${order.delivery === "shipping" ? "Envio" : "Retirada"}</small></div><b>${formatBRL(order.total)}</b><p>${order.items.map((item) => `${item.quantity}x ${item.name}`).join(" · ")}</p></article>
+  `).join("") : `<p class="empty-history">Você ainda não fez nenhuma compra.</p>`;
+}
+
+function openAccount(){
+  renderAccount();
+  openModal(accountModal);
+}
+
+accountButton.addEventListener("click", openAccount);
+document.querySelectorAll("[data-close-modal]").forEach((button) => {
+  button.addEventListener("click", () => closeModal(document.getElementById(button.dataset.closeModal)));
+});
+document.querySelectorAll(".modal-backdrop").forEach((modal) => {
+  modal.addEventListener("click", (event) => { if(event.target === modal) closeModal(modal); });
+});
+document.querySelectorAll("[data-auth-view]").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".auth-tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+    loginForm.classList.toggle("is-hidden", button.dataset.authView !== "login");
+    registerForm.classList.toggle("is-hidden", button.dataset.authView !== "register");
+    setMessage(loginMessage, "", "");
+    setMessage(registerMessage, "", "");
+  });
+});
+
+loginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(loginForm);
+  try {
+    const result = await apiRequest("/auth/login", { method: "POST", body: JSON.stringify({ cpf: data.get("cpf"), password: data.get("password") }) });
+    sessionToken = result.token;
+    sessionUser = result.user;
+    localStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
+    loginForm.reset();
+    await renderAccount();
+    setMessage(loginMessage, "", "");
+  } catch(error) {
+    setMessage(loginMessage, error.message, "error");
+  }
+});
+
+registerForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const data = new FormData(registerForm);
+  const cpf = normalizeCpf(data.get("cpf"));
+  if(cpf.length !== 11){
+    setMessage(registerMessage, "Digite um CPF válido com 11 números.", "error");
+    return;
+  }
+  try {
+    const result = await apiRequest("/auth/register", { method: "POST", body: JSON.stringify({ name: data.get("name"), cpf, cep: data.get("cep"), street: data.get("street"), neighborhood: data.get("neighborhood"), number: data.get("number"), complement: data.get("complement"), password: data.get("password") }) });
+    sessionToken = result.token;
+    sessionUser = result.user;
+    localStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
+    registerForm.reset();
+    await renderAccount();
+  } catch(error) {
+    setMessage(registerMessage, error.message || "Não foi possível criar a conta.", "error");
+  }
+});
+
+document.getElementById("logoutButton").addEventListener("click", () => {
+  sessionToken = "";
+  sessionUser = null;
+  localStorage.removeItem(SESSION_TOKEN_KEY);
+  renderAccount();
+});
 
 function saveCart(){
   localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
@@ -436,30 +594,68 @@ applyCouponBtn.addEventListener("click", () => {
   updateCart();
 });
 
-finishOrderBtn.addEventListener("click", () => {
+function orderTotals(delivery = "pickup"){
+  const subtotal = cartSubtotal();
+  const discount = appliedCoupon ? subtotal * appliedCoupon.percent : 0;
+  return { subtotal, discount, shipping: 0, total: subtotal - discount };
+}
+
+function openCheckout(){
   if(cart.length === 0){
     alert("Seu carrinho está vazio!");
     return;
   }
+  if(!currentUser()){
+    openAccount();
+    setMessage(loginMessage, "Entre ou crie sua conta para finalizar a compra.", "error");
+    return;
+  }
+  checkoutMessage.textContent = "";
+  checkoutTotal.textContent = formatBRL(orderTotals().total);
+  openModal(checkoutModal);
+}
 
+finishOrderBtn.addEventListener("click", openCheckout);
+document.querySelectorAll("input[name=delivery]").forEach((input) => {
+  input.addEventListener("change", () => {
+    checkoutTotal.textContent = formatBRL(orderTotals(input.value).total);
+  });
+});
+
+checkoutForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const user = currentUser();
+  if(!user){
+    closeModal(checkoutModal);
+    openAccount();
+    return;
+  }
+  const delivery = new FormData(checkoutForm).get("delivery");
+  const totals = orderTotals(delivery);
+  try {
+    await apiRequest("/orders", {
+      method: "POST",
+      body: JSON.stringify({ delivery, items: cart.map((item) => ({ id: item.id, quantity: item.quantity })) })
+    });
+  } catch(error) {
+    setMessage(checkoutMessage, error.message, "error");
+    return;
+  }
   const lines = cart.map((item) => {
     const product = PRODUCTS_BY_ID[item.id];
-    const subtotal = product.price * item.quantity;
-    return `${item.quantity}x ${product.name} - ${formatBRL(subtotal)}`;
+    return `${item.quantity}x ${product.name} - ${formatBRL(product.price * item.quantity)}`;
   }).join("\n");
+  let message = `Olá! Gostaria de fazer um pedido na Grenin Geek Store:\n\n${lines}\n\nSubtotal: ${formatBRL(totals.subtotal)}`;
+  if(appliedCoupon) message += `\nCupom ${appliedCoupon.code}: - ${formatBRL(totals.discount)}`;
+  message += delivery === "shipping" ? "\nForma de recebimento: Envio\nA taxa de envio poderá ser cobrada." : "\nForma de recebimento: Retirada na loja";
+  message += `\nTotal: ${formatBRL(totals.total)}\n\nCliente: ${user.name}\nCPF: ${user.cpf}\nEndereço: ${user.street}, ${user.number}, ${user.neighborhood}, CEP ${user.cep}. ${user.complement}`;
 
-  const subtotal = cartSubtotal();
-  const discount = appliedCoupon ? subtotal * appliedCoupon.percent : 0;
-  const total = subtotal - discount;
-
-  let message = `Olá! Gostaria de fazer um pedido na Grenin Geek Store:\n\n${lines}\n\nSubtotal: ${formatBRL(subtotal)}`;
-
-  if(appliedCoupon){
-    message += `\nCupom ${appliedCoupon.code}: - ${formatBRL(discount)}`;
-  }
-
-  message += `\nTotal: ${formatBRL(total)}`;
-
+  cart = [];
+  saveCart();
+  updateCart();
+  closeModal(checkoutModal);
+  closeCart();
+  renderAccount();
   window.open(whatsappLink(message), "_blank", "noopener");
 });
 
@@ -515,5 +711,24 @@ document.addEventListener("keydown", (e) => {
    INICIALIZAÇÃO
    ========================================================= */
 
-renderProducts();
-updateCart();
+async function initializeStore(){
+  try {
+    await loadProducts();
+  } catch(error) {
+    console.error(error);
+  }
+  if(sessionToken){
+    try {
+      const result = await apiRequest("/me");
+      sessionUser = result.user;
+    } catch(error) {
+      sessionToken = "";
+      localStorage.removeItem(SESSION_TOKEN_KEY);
+    }
+  }
+  renderProducts();
+  updateCart();
+  await renderAccount();
+}
+
+initializeStore();

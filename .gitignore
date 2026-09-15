@@ -1,0 +1,5 @@
+node_modules/
+grenin.sqlite
+grenin.sqlite-shm
+grenin.sqlite-wal
+.env

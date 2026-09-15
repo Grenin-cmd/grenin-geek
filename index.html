@@ -21,6 +21,10 @@
       </div>
     </div>
     <div class="header-actions">
+      <button id="accountButton" class="account-button" type="button" aria-label="Abrir minha conta">
+        <span aria-hidden="true">◉</span>
+        <span id="accountLabel">Entrar</span>
+      </button>
       <button id="cartButton" class="cart-button" aria-label="Abrir carrinho">
         🛒
         <span id="cartCount">0</span>
@@ -180,6 +184,69 @@
 <div id="lightbox" class="lightbox">
   <button id="lightboxClose" class="lightbox-close" aria-label="Fechar imagem ampliada">✕</button>
   <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- Conta, autenticação e checkout ficam no navegador nesta versão estática. -->
+<div id="accountModal" class="modal-backdrop" aria-hidden="true">
+  <section class="modal-panel account-panel" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+    <button class="modal-close" data-close-modal="accountModal" type="button" aria-label="Fechar">✕</button>
+    <div class="modal-heading">
+      <span class="modal-kicker">Área do cliente</span>
+      <h2 id="accountTitle">Entre para acompanhar seus pedidos</h2>
+    </div>
+    <div id="authView">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth-view="login" type="button">Entrar</button>
+        <button class="auth-tab" data-auth-view="register" type="button">Criar cadastro</button>
+      </div>
+      <form id="loginForm" class="modal-form">
+        <label>CPF<input name="cpf" inputmode="numeric" required placeholder="000.000.000-00"></label>
+        <label>Senha<input name="password" type="password" required minlength="4" placeholder="Sua senha"></label>
+        <p id="loginMessage" class="form-message"></p>
+        <button class="modal-primary" type="submit">Entrar na conta</button>
+      </form>
+      <form id="registerForm" class="modal-form is-hidden">
+        <div class="form-grid">
+          <label class="field-wide">Nome completo<input name="name" required autocomplete="name"></label>
+          <label>CPF<input name="cpf" inputmode="numeric" required></label>
+          <label>CEP<input name="cep" inputmode="numeric" required></label>
+          <label class="field-wide">Rua<input name="street" required></label>
+          <label>Número<input name="number" required></label>
+          <label>Bairro<input name="neighborhood" required></label>
+          <label class="field-wide">Complemento <span>(opcional)</span><input name="complement" placeholder="Apartamento, referência..."></label>
+          <label class="field-wide">Senha<input name="password" type="password" required minlength="4"></label>
+        </div>
+        <p id="registerMessage" class="form-message"></p>
+        <button class="modal-primary" type="submit">Criar minha conta</button>
+      </form>
+    </div>
+    <div id="accountView" class="is-hidden">
+      <div class="account-summary" id="accountSummary"></div>
+      <h3>Histórico de compras</h3>
+      <div id="orderHistory" class="order-history"></div>
+      <button id="logoutButton" class="modal-secondary" type="button">Sair da conta</button>
+    </div>
+  </section>
+</div>
+
+<div id="checkoutModal" class="modal-backdrop" aria-hidden="true">
+  <section class="modal-panel checkout-panel" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+    <button class="modal-close" data-close-modal="checkoutModal" type="button" aria-label="Fechar">✕</button>
+    <div class="modal-heading">
+      <span class="modal-kicker">Última etapa</span>
+      <h2 id="checkoutTitle">Como você quer receber?</h2>
+      <p>Escolha entre retirada na loja ou envio. A taxa de envio poderá ser cobrada.</p>
+    </div>
+    <form id="checkoutForm" class="modal-form">
+      <div class="delivery-options">
+        <label class="delivery-option"><input type="radio" name="delivery" value="pickup" checked><span><strong>Retirada na loja</strong><small>Rua Argentina, 54 · Cláudio/MG<br>Sem taxa de entrega</small></span></label>
+        <label class="delivery-option"><input type="radio" name="delivery" value="shipping"><span><strong>Enviar para meu endereço</strong><small>A taxa de envio poderá ser cobrada.</small></span></label>
+      </div>
+      <div class="checkout-total"><span>Total do pedido</span><strong id="checkoutTotal">R$ 0,00</strong></div>
+      <p id="checkoutMessage" class="form-message"></p>
+      <button class="modal-primary" type="submit">Confirmar pedido e enviar no WhatsApp</button>
+    </form>
+  </section>
 </div>
 
 <script src="js/script.js"></script>
