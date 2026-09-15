@@ -70,7 +70,10 @@ PRODUCTS.forEach((p) => { p.id = normalize(p.name); });
 let PRODUCTS_BY_ID = {};
 PRODUCTS.forEach((p) => { PRODUCTS_BY_ID[p.id] = p; });
 
-const API_BASE = window.location.protocol === "file:" || window.location.port === "8000"
+const configuredApiUrl = window.GRENIN_API_URL || "";
+const API_BASE = configuredApiUrl
+  ? configuredApiUrl.replace(/\/$/, "") + "/api"
+  : window.location.protocol === "file:" || window.location.port === "8000"
   ? "http://localhost:3000/api"
   : "/api";
 const SESSION_TOKEN_KEY = "grenin-session-token";

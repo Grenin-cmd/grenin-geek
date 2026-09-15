@@ -30,6 +30,19 @@ PORT=3000 npm start
 
 O cadastro e login usam senha protegida com `scrypt`; o navegador guarda somente um token de sessão. Produtos e estoque são lidos do endpoint `/api/products`, enquanto pedidos usam `/api/orders`.
 
+### Publicar no Render
+
+O arquivo `render.yaml` já configura o serviço Node, o comando de inicialização e um disco persistente em `/var/data`. No Render:
+
+1. Crie um **Blueprint** conectado a este repositório.
+2. Confirme o arquivo `render.yaml`.
+3. Defina `FRONTEND_ORIGIN` apenas se o frontend ficar em outro domínio, como `https://grenin-cmd.github.io`.
+4. Use a URL fornecida pelo Render para acessar a loja, por exemplo `https://grenin-geek-store.onrender.com`.
+
+O disco persistente do Render é necessário para o SQLite e pode depender de um plano pago. Sem ele, clientes, pedidos e estoque podem ser apagados quando o serviço for recriado.
+
+Se o frontend continuar no GitHub Pages, altere `window.GRENIN_API_URL` em `index.html` para a URL do backend Render, sem a barra final. Nesse caso, configure `FRONTEND_ORIGIN` com a origem exata do GitHub Pages.
+
 ## Painel administrativo
 
 O cadastro existente de Victor Alexandre Pereira Carvalho, CPF `14517447650`, recebe automaticamente a função de administrador quando o servidor inicia. Basta entrar normalmente pela área da conta usando a senha já cadastrada; o painel **Produtos e estoque** aparecerá dentro da conta.

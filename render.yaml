@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: grenin-geek-store
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_PATH
+        value: /var/data/grenin.sqlite
+      - key: FRONTEND_ORIGIN
+        sync: false
+    disk:
+      name: grenin-geek-data
+      mountPath: /var/data
+      sizeGB: 1

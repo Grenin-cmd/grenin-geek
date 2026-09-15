@@ -1,10 +1,13 @@
 const crypto = require("node:crypto");
+const fs = require("node:fs");
 const path = require("node:path");
 const express = require("express");
 const Database = require("better-sqlite3");
 
 const PORT = process.env.PORT || 3000;
-const database = new Database(path.join(__dirname, "grenin.sqlite"));
+const databasePath = process.env.DATABASE_PATH || path.join(__dirname, "grenin.sqlite");
+fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+const database = new Database(databasePath);
 database.pragma("journal_mode = WAL");
 
 database.exec(`
@@ -84,7 +87,12 @@ seedProducts();
 const app = express();
 app.use((request, response, next) => {
   const origin = request.get("origin");
-  if (origin === "http://localhost:8000" || origin === "http://127.0.0.1:8000") {
+  const allowedOrigins = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    process.env.FRONTEND_ORIGIN
+  ].filter(Boolean);
+  if (allowedOrigins.includes(origin)) {
     response.setHeader("Access-Control-Allow-Origin", origin);
     response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
