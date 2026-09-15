@@ -37,8 +37,11 @@ No painel do Supabase:
 1. Abra **SQL Editor**, crie uma query e execute `supabase/migrations/001_store.sql`.
 2. Abra **Edge Functions**, crie uma função chamada `api` e use o conteúdo de `supabase/functions/api/index.ts`.
 3. Publique a função.
-4. Troque `SEU_PROJECT_REF` no `index.html` pelo identificador do seu projeto.
-5. Faça commit e aguarde o GitHub Pages atualizar.
+4. Nas configurações da função, desative **JWT verification** / **Verify JWT**, pois o login da loja usa CPF e senha próprios.
+5. Troque `SEU_PROJECT_REF` no `index.html` pelo identificador do seu projeto.
+6. Faça commit e aguarde o GitHub Pages atualizar.
+
+O arquivo `supabase/config.toml` também registra `verify_jwt = false` para deploy feito pela CLI.
 
 Configure o segredo `SUPABASE_SERVICE_ROLE_KEY` na Edge Function com a chave de serviço do projeto. Nunca coloque essa chave no frontend ou no GitHub.
 

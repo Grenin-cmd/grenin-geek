@@ -293,7 +293,7 @@ async function apiRequest(endpoint, options = {}){
     throw new Error("A API está desligada. Execute `npm start` no terminal e acesse http://localhost:3000.");
   }
   const data = await response.json().catch(() => ({}));
-  if(!response.ok) throw new Error(data.error || "Não foi possível concluir a operação.");
+  if(!response.ok) throw new Error(data.error || data.message || "Não foi possível concluir a operação.");
   return data;
 }
 
