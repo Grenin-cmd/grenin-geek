@@ -21,7 +21,7 @@ const CATEGORIES = {
 let PRODUCTS = [
   { name: "Box Mega Luar Clefable", category: "pokemon-tcg", price: 125, desc: "Caixa fechada, 8 pacotes.", image: "assets/produtos/box-clefable.jpg", stock: 0 },
   { name: "Coleção Arco-Íris Evoluções Prismáticas", category: "pokemon-tcg", price: 210, desc: "Caixa fechada, 10 pacotes.", image: "assets/produtos/box-eevee.jpg", stock: 0 },
-  { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-escuridão.jpg", stock: 1 },
+  { name: "Blister Triplo Escuridão Absoluta", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-escuridão.jpg", stock: 0 },
   { name: "Blister Triplo Caos Ascendente", category: "pokemon-tcg", price: 42.50, desc: "3 pacotes.", image: "assets/produtos/triple-caos.jpg", stock: 2 },
   { name: "Blister Unitário Equilíbrio Perfeito ", category: "pokemon-tcg", price: 13, desc: "Booster unico", image: "assets/produtos/buniequperf.jpg", stock: 2 },
   { name: "Blister Unitário Escuridão Absoluta ", category: "pokemon-tcg", price: 13, desc: "Booster unico", image: "assets/produtos/bunicoescabs.jpg", stock: 1 },
