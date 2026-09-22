@@ -495,14 +495,16 @@ header{
 }
 
 .preorder-alert-content {
-  background: var(--card-face, #fff);
-  color: var(--text, #333);
+  background: var(--ink-2); /* Fundo escuro para combinar com a loja */
+  color: var(--text);       /* Letra clara e legível */
+  border: 1px solid var(--ink-3); /* Borda subtil para destacar */
   padding: 24px;
   border-radius: 12px;
   max-width: 450px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.7); /* Sombra mais forte para o popup */
   animation: slideInPreorder 0.3s ease-out;
+}
 }
 
 .preorder-alert-content h4 {
@@ -515,6 +517,10 @@ header{
 .preorder-alert-content p {
   margin-bottom: 15px;
   line-height: 1.5;
+  color: var(--text-dim); /* Dá um tom um pouco mais suave ao texto de aviso */
+}
+.preorder-alert-content p strong {
+  color: var(--text); /* Destaca as palavras a negrito a branco */
 }
 
 .alert-close {
