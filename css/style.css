@@ -461,6 +461,82 @@ header{
 }
 .btn-more:hover{ background: #444; }
 
+/* ---------- ESTILOS DA PRÉ-VENDA ---------- */
+/* Etiqueta de Pré-venda na imagem do produto */
+.stock-badge.preorder-badge {
+  background-color: #ff9800; /* Laranja para destacar */
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Botão de comprar quando é pré-venda */
+.btn-cart.preorder-btn {
+  background-color: #ff9800;
+  border-color: #ff9800;
+  color: #fff;
+}
+.btn-cart.preorder-btn:hover {
+  background-color: #e68a00;
+}
+
+/* Estilos do Alerta de Pré-Venda Flutuante */
+.preorder-alert {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  padding: 20px;
+}
+
+.preorder-alert-content {
+  background: var(--card-face, #fff);
+  color: var(--text, #333);
+  padding: 24px;
+  border-radius: 12px;
+  max-width: 450px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  animation: slideInPreorder 0.3s ease-out;
+}
+
+.preorder-alert-content h4 {
+  color: #ff9800;
+  margin-top: 0;
+  font-size: 1.3rem;
+  margin-bottom: 12px;
+}
+
+.preorder-alert-content p {
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.alert-close {
+  background: #ff9800;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  margin-top: 10px;
+}
+
+@keyframes slideInPreorder {
+  from { transform: translateY(30px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+/* ------------------------------------------ */
+
+
 /* ---------- ABOUT (card-back style) ---------- */
 .about{
   padding: 80px 0;
