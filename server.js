@@ -41,8 +41,10 @@ async function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS products (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
       price NUMERIC(10, 2) NOT NULL CHECK (price >= 0), description TEXT NOT NULL DEFAULT '',
-      image TEXT, stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0), active BOOLEAN NOT NULL DEFAULT TRUE
+      image TEXT, stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0), active BOOLEAN NOT NULL DEFAULT TRUE,
+      is_preorder BOOLEAN NOT NULL DEFAULT FALSE
     );
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS is_preorder BOOLEAN NOT NULL DEFAULT FALSE;
     CREATE TABLE IF NOT EXISTS orders (
       id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id),
       delivery TEXT NOT NULL CHECK (delivery IN ('pickup', 'shipping')),
@@ -117,25 +119,25 @@ function validateCustomer(body) {
 }
 
 app.get("/api/products", async (request, response, next) => {
-  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock FROM products WHERE active = TRUE ORDER BY id")).rows); } catch (error) { next(error); }
+  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock, is_preorder FROM products WHERE active = TRUE ORDER BY id")).rows); } catch (error) { next(error); }
 });
 app.get("/api/admin/products", adminAuth, async (request, response, next) => {
-  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock, active FROM products ORDER BY id")).rows); } catch (error) { next(error); }
+  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock, active, is_preorder FROM products ORDER BY id")).rows); } catch (error) { next(error); }
 });
 app.patch("/api/admin/products/:id", adminAuth, async (request, response, next) => {
-  const { price, stock } = request.body;
+  const { price, stock, is_preorder } = request.body;
   if (!Number.isFinite(Number(price)) || Number(price) < 0 || !Number.isInteger(Number(stock)) || Number(stock) < 0) return response.status(400).json({ error: "Preço ou estoque inválido." });
   try {
-    const result = await database.query("UPDATE products SET price = $1, stock = $2 WHERE id = $3", [Number(price), Number(stock), request.params.id]);
+    const result = await database.query("UPDATE products SET price = $1, stock = $2, is_preorder = $3 WHERE id = $4", [Number(price), Number(stock), Boolean(is_preorder), request.params.id]);
     if (!result.rowCount) return response.status(404).json({ error: "Produto não encontrado." });
     response.json({ success: true });
   } catch (error) { next(error); }
 });
 app.post("/api/admin/products", adminAuth, async (request, response, next) => {
-  const { id, name, category, price, desc, image, stock } = request.body;
+  const { id, name, category, price, desc, image, stock, is_preorder } = request.body;
   if (!id || !name || !category || !Number.isFinite(Number(price)) || Number(price) < 0 || !Number.isInteger(Number(stock)) || Number(stock) < 0) return response.status(400).json({ error: "Preencha os dados do produto corretamente." });
   try {
-    await database.query("INSERT INTO products (id, name, category, price, description, image, stock) VALUES ($1, $2, $3, $4, $5, $6, $7)", [id, name.trim(), category, Number(price), String(desc || "").trim(), String(image || "").trim(), Number(stock)]);
+    await database.query("INSERT INTO products (id, name, category, price, description, image, stock, is_preorder) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", [id, name.trim(), category, Number(price), String(desc || "").trim(), String(image || "").trim(), Number(stock), Boolean(is_preorder)]);
     response.status(201).json({ success: true });
   } catch (error) { response.status(error.code === "23505" ? 409 : 400).json({ error: error.code === "23505" ? "Já existe um produto com esse ID." : "Não foi possível adicionar o produto." }); }
 });
@@ -182,17 +184,20 @@ app.post("/api/orders", auth, async (request, response) => {
     const normalizedItems = [];
     let total = 0;
     for (const item of items) {
-      const result = await client.query("SELECT id, name, price, stock FROM products WHERE id = $1 AND active = TRUE FOR UPDATE", [item.id]);
+      const result = await client.query("SELECT id, name, price, stock, is_preorder FROM products WHERE id = $1 AND active = TRUE FOR UPDATE", [item.id]);
       const product = result.rows[0];
       const quantity = Number(item.quantity);
-      if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > product.stock) throw new Error("Produto sem estoque ou quantidade inválida.");
+      if (!product || !Number.isInteger(quantity) || quantity < 1) throw new Error("Produto sem estoque ou quantidade inválida.");
+      if (!product.is_preorder && quantity > product.stock) throw new Error("Produto sem estoque ou quantidade inválida.");
       normalizedItems.push({ ...product, quantity });
       total += Number(product.price) * quantity;
     }
     const order = await client.query("INSERT INTO orders (user_id, delivery, total) VALUES ($1, $2, $3) RETURNING id", [request.user.id, delivery, total]);
     for (const item of normalizedItems) {
       await client.query("INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price) VALUES ($1, $2, $3, $4, $5)", [order.rows[0].id, item.id, item.name, item.quantity, item.price]);
-      await client.query("UPDATE products SET stock = stock - $1 WHERE id = $2", [item.quantity, item.id]);
+      if (!item.is_preorder) {
+        await client.query("UPDATE products SET stock = stock - $1 WHERE id = $2", [item.quantity, item.id]);
+      }
     }
     await client.query("COMMIT");
     response.status(201).json({ orderId: order.rows[0].id });
