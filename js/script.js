@@ -126,9 +126,10 @@ function renderProducts(){
   getSortedProducts().forEach(({ p }) => {
     const cat = CATEGORIES[p.category];
     const outOfStock = p.stock === 0;
+    const isPreorder = p.is_preorder === true;
 
     const card = document.createElement("article");
-    card.className = "card" + (outOfStock ? " out-of-stock" : "");
+    card.className = "card" + (outOfStock && !isPreorder ? " out-of-stock" : "") + (isPreorder ? " preorder" : "");
     card.dataset.category = p.category;
     card.dataset.name = normalize(p.name);
     card.style.setProperty("--cardcolor", cat.color);
@@ -139,11 +140,23 @@ function renderProducts(){
 
     const cardImgClass = "card-img" + (p.image ? " has-photo" : "");
 
-    const stockBadgeHtml = outOfStock ? `<span class="stock-badge">Esgotado</span>` : "";
+    // Badge de estoque/pré-venda
+    let stockBadgeHtml = "";
+    if (isPreorder) {
+      stockBadgeHtml = `<span class="stock-badge preorder-badge">Pré-venda</span>`;
+    } else if (outOfStock) {
+      stockBadgeHtml = `<span class="stock-badge">Esgotado</span>`;
+    }
 
-    const cartButtonHtml = outOfStock
-      ? `<button type="button" class="btn-cart" disabled>Esgotado</button>`
-      : `<button type="button" class="btn-cart" data-id="${p.id}">🛒 Adicionar ao Carrinho</button>`;
+    // Botão do carrinho
+    let cartButtonHtml;
+    if (isPreorder) {
+      cartButtonHtml = `<button type="button" class="btn-cart preorder-btn" data-id="${p.id}">📅 Pré-encomendar</button>`;
+    } else if (outOfStock) {
+      cartButtonHtml = `<button type="button" class="btn-cart" disabled>Esgotado</button>`;
+    } else {
+      cartButtonHtml = `<button type="button" class="btn-cart" data-id="${p.id}">🛒 Adicionar ao Carrinho</button>`;
+    }
 
     card.innerHTML = `
       <div class="card-top">
@@ -352,6 +365,10 @@ async function renderAdminProducts(){
         <div><strong>${product.name}</strong><small>${product.active ? "Ativo" : "Desativado"} · ${product.id}</small></div>
         <label>Preço<input data-admin-price type="number" min="0" step="0.01" value="${product.price}"></label>
         <label>Estoque<input data-admin-stock type="number" min="0" step="1" value="${product.stock}"></label>
+        <label class="preorder-toggle">
+          <input type="checkbox" data-admin-preorder ${product.is_preorder ? "checked" : ""}>
+          <span>Ativar pré-venda</span>
+        </label>
         <button type="button" data-admin-save>Salvar</button>
         ${product.active ? `<button type="button" class="admin-delete" data-admin-delete>Desativar</button>` : ""}
       </article>
@@ -382,7 +399,12 @@ adminProducts.addEventListener("click", async (event) => {
   const id = productCard.dataset.adminProduct;
   try {
     if(event.target.closest("[data-admin-save]")){
-      await apiRequest(`/admin/products/${id}`, { method: "PATCH", body: JSON.stringify({ price: Number(productCard.querySelector("[data-admin-price]").value), stock: Number(productCard.querySelector("[data-admin-stock]").value) }) });
+      const updateData = {
+        price: Number(productCard.querySelector("[data-admin-price]").value),
+        stock: Number(productCard.querySelector("[data-admin-stock]").value),
+        is_preorder: productCard.querySelector("[data-admin-preorder]")?.checked || false
+      };
+      await apiRequest(`/admin/products/${id}`, { method: "PATCH", body: JSON.stringify(updateData) });
       setMessage(adminMessage, "Produto atualizado.", "success");
       await loadProducts();
       renderProducts();
@@ -498,8 +520,8 @@ function addToCart(id, btnEl){
   const product = PRODUCTS_BY_ID[id];
   const currentQty = getCartQuantity(id);
 
-  // Não deixa adicionar além do que existe em estoque
-  if(currentQty >= product.stock){
+  // Não deixa adicionar além do que existe em estoque (exceto pré-venda)
+  if(!product.is_preorder && currentQty >= product.stock){
     if(btnEl){
       const original = btnEl.textContent;
       btnEl.classList.add("limit");
@@ -525,15 +547,45 @@ function addToCart(id, btnEl){
   bumpCartButton();
   openCart();
 
+  // Mostrar mensagem de pré-venda se aplicável
+  if(product.is_preorder){
+    showPreorderMessage(product.name);
+  }
+
   if(btnEl){
     const original = btnEl.textContent;
     btnEl.classList.add("added");
-    btnEl.textContent = "✓ Adicionado";
+    btnEl.textContent = product.is_preorder ? "✓ Pré-encomendado" : "✓ Adicionado";
     setTimeout(() => {
       btnEl.classList.remove("added");
       btnEl.textContent = original;
     }, 900);
   }
+}
+
+// Função para mostrar mensagem de pré-venda
+function showPreorderMessage(productName){
+  const message = document.createElement("div");
+  message.className = "preorder-alert";
+  message.innerHTML = `
+    <div class="preorder-alert-content">
+      <h4>📅 Produto em Pré-venda</h4>
+      <p><strong>"${productName}"</strong> está em pré-venda!</p>
+      <p>O prazo para entrega ou busca deve ser consultado em nosso <strong>Instagram</strong> ou <strong>WhatsApp</strong>.</p>
+      <p>Garantir na pré-venda apenas te garante o produto antes de todo mundo e <strong>não a pronta entrega</strong>.</p>
+      <button type="button" class="alert-close">Entendi</button>
+    </div>
+  `;
+  document.body.appendChild(message);
+  
+  // Auto-remover após 8 segundos
+  const timeout = setTimeout(() => message.remove(), 8000);
+  
+  // Remover ao clicar no botão
+  message.querySelector(".alert-close").addEventListener("click", () => {
+    clearTimeout(timeout);
+    message.remove();
+  });
 }
 
 function changeQuantity(id, delta){
@@ -542,8 +594,8 @@ function changeQuantity(id, delta){
 
   const product = PRODUCTS_BY_ID[item.id];
 
-  // Não deixa aumentar além do que existe em estoque
-  if(delta > 0 && item.quantity >= product.stock){
+  // Não deixa aumentar além do que existe em estoque (exceto pré-venda)
+  if(delta > 0 && !product.is_preorder && item.quantity >= product.stock){
     return;
   }
 
@@ -598,7 +650,7 @@ function updateCart(){
       ? `<img src="${product.image}" alt="${product.name}">`
       : "";
 
-    const atLimit = item.quantity >= product.stock;
+    const atLimit = !product.is_preorder && item.quantity >= product.stock;
     const limitMessage = atLimit ? `<p class="cart-item-limit">Limite em estoque atingido</p>` : "";
 
     return `
