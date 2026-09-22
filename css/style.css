@@ -779,39 +779,6 @@ footer{
 .card.out-of-stock .card-img{
   filter: grayscale(0.6);
 }
-
-/* ---------- ESTILO DE PRÉ-VENDA ---------- */
-.stock-badge.preorder-badge{
-  background: #1a5e9b;
-  box-shadow: 0 0 12px rgba(26, 94, 155, 0.5);
-}
-.card.preorder{
-  position: relative;
-}
-.card.preorder::before{
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 2px solid #1a5e9b;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0.4;
-}
-.btn-cart.preorder-btn{
-  background: linear-gradient(135deg, #1a5e9b, #2a7db8);
-  border: 1px solid #1a5e9b;
-  color: #fff;
-}
-.btn-cart.preorder-btn:hover{
-  background: linear-gradient(135deg, #2a7db8, #3a8dc8);
-  border-color: #3a8dc8;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(26, 94, 155, 0.4);
-}
-
 .btn-cart:disabled{
   background: #5a5a63;
   color: #cfcfd6;
@@ -976,64 +943,6 @@ footer{
 }
 .lightbox-close:hover{ background: var(--ink); }
 
-/* ---------- ALERTA DE PRÉ-VENDA ---------- */
-.preorder-alert{
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 2000;
-  background: linear-gradient(135deg, #0d3b66, #1a5e9b);
-  border: 2px solid #2a7db8;
-  border-radius: 12px;
-  padding: 20px;
-  max-width: 380px;
-  box-shadow: 0 12px 32px rgba(26, 94, 155, 0.3);
-  animation: slideInRight 0.4s ease;
-}
-@keyframes slideInRight {
-  from {
-    transform: translateX(420px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-.preorder-alert-content{
-  color: #fff;
-}
-.preorder-alert h4{
-  margin: 0 0 12px;
-  font-size: 1.1rem;
-  font-family: var(--font-display);
-  color: #a8d5ff;
-}
-.preorder-alert p{
-  margin: 8px 0;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-.preorder-alert p:last-of-type{
-  margin-bottom: 16px;
-}
-.alert-close{
-  width: 100%;
-  padding: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.alert-close:hover{
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-2px);
-}
-
 /* ---------- CONTA, LOGIN E CHECKOUT ---------- */
 .is-hidden{ display:none !important; }
 .modal-backdrop{
@@ -1122,27 +1031,6 @@ footer{
 .admin-product button{ min-height:34px; border:0; border-radius:6px; padding:5px 8px; background:var(--gold); color:#1a1200; font-size:.72rem; font-weight:700; cursor:pointer; }
 .admin-product .admin-delete{ background:#b42318; color:#fff; }
 .admin-product.is-inactive{ opacity:.55; }
-
-/* Toggle de pré-venda no admin */
-.preorder-toggle{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-  color: var(--text-dim);
-  font-size: 0.75rem;
-}
-.preorder-toggle input{
-  width: auto !important;
-  min-height: 0 !important;
-  cursor: pointer;
-  accent-color: #1a5e9b;
-}
-.preorder-toggle input:checked + span{
-  color: #1a5e9b;
-  font-weight: 600;
-}
 .delivery-options{ display:grid; gap:10px; }
 .delivery-option{ display:flex !important; grid-template-columns:auto 1fr; grid-template-columns:none; flex-direction:row; align-items:flex-start; gap:11px; padding:14px; border:1px solid var(--ink-3); border-radius:10px; cursor:pointer; }
 .delivery-option:has(input:checked){ border-color:var(--gold); background:rgba(242,184,74,.08); }
