@@ -594,8 +594,8 @@ function changeQuantity(id, delta){
 
   const product = PRODUCTS_BY_ID[item.id];
 
-  // Não deixa aumentar além do que existe em estoque (exceto pré-venda)
-  if(delta > 0 && !product.is_preorder && item.quantity >= product.stock){
+  // Não deixa aumentar além do que existe em estoque
+  if(delta > 0 && item.quantity >= product.stock){
     return;
   }
 
@@ -650,7 +650,7 @@ function updateCart(){
       ? `<img src="${product.image}" alt="${product.name}">`
       : "";
 
-    const atLimit = !product.is_preorder && item.quantity >= product.stock;
+    const atLimit = item.quantity >= product.stock;
     const limitMessage = atLimit ? `<p class="cart-item-limit">Limite em estoque atingido</p>` : "";
 
     return `
