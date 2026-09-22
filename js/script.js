@@ -126,7 +126,7 @@ function renderProducts(){
   getSortedProducts().forEach(({ p }) => {
     const cat = CATEGORIES[p.category];
     const outOfStock = p.stock === 0;
-    const isPreorder = p.is_preorder === true;
+    const isPreorder = Boolean(p.is_preorder); // CORREÇÃO 1: Trata tanto true como 1
 
     const card = document.createElement("article");
     card.className = "card" + (outOfStock && !isPreorder ? " out-of-stock" : "") + (isPreorder ? " preorder" : "");
@@ -351,7 +351,7 @@ async function renderAccount(){
     return;
   }
   orderHistory.innerHTML = orders.length ? orders.slice().reverse().map((order) => `
-    <article class="order-card"><div><strong>Pedido #${order.id}</strong><small>${order.date} · ${order.delivery === "shipping" ? "Envio" : "Retirada"}</small></div><b>${formatBRL(order.total)}</b><p>${order.items.map((item) => `${item.quantity}x ${item.name}`).join(" · ")}</p></article>
+    <article class="order-card"><div><strong>Pedido #${order.id}</strong><small>${order.date} · ${order.delivery === "shipping" ? "Envio" : "Retirada"}</small></div><b>${formatBRL(order.total)}</b><p>${order.items.map((item) => `${item.quantity}x${item.name}`).join(" · ")}</p></article>
   `).join("") : `<p class="empty-history">Você ainda não fez nenhuma compra.</p>`;
   adminPanel.classList.toggle("is-hidden", !user.isAdmin);
   if(user.isAdmin) await renderAdminProducts();
@@ -381,8 +381,11 @@ async function renderAdminProducts(){
 newProductForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(newProductForm);
+  const payload = Object.fromEntries(data);
+  payload.is_preorder = data.get("is_preorder") === "on"; // CORREÇÃO 2: Lê o estado da checkbox no produto novo
+  
   try {
-    await apiRequest("/admin/products", { method: "POST", body: JSON.stringify(Object.fromEntries(data)) });
+    await apiRequest("/admin/products", { method: "POST", body: JSON.stringify(payload) });
     newProductForm.reset();
     setMessage(adminMessage, "Produto adicionado.", "success");
     await loadProducts();
@@ -570,9 +573,8 @@ function showPreorderMessage(productName){
   message.innerHTML = `
     <div class="preorder-alert-content">
       <h4>📅 Produto em Pré-venda</h4>
-      <p><strong>"${productName}"</strong> está em pré-venda!</p>
-      <p>O prazo para entrega ou busca deve ser consultado em nosso <strong>Instagram</strong> ou <strong>WhatsApp</strong>.</p>
-      <p>Garantir na pré-venda apenas te garante o produto antes de todo mundo e <strong>não a pronta entrega</strong>.</p>
+      <p>O produto <strong>"${productName}"</strong> é uma pré-venda!</p>
+      <p>Produto em pre venda, prazo para entrega ou busca deve ser consultada em nosso instagram ou whatssap, garantir na pre venda apenas te garante o produto antes de todo mundo e não a pronta entrega.</p>
       <button type="button" class="alert-close">Entendi</button>
     </div>
   `;
