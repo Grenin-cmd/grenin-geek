@@ -87,6 +87,12 @@
       <button class="tab" data-filter="acessorios" style="--dotcolor: var(--type-colorless)">
         <span class="dot"></span> Acessórios
       </button>
+      <button class="tab" data-filter="rpg" style="--dotcolor: var(--type-rpg)">
+        <span class="dot"></span> RPG
+      </button>
+      <button class="tab" data-filter="cartas" style="--dotcolor: var(--type-cards)">
+        <span class="dot"></span> Cartas
+      </button>
     </div>
 
     <div class="binder" id="binder">
@@ -228,7 +234,9 @@
         <div class="admin-heading">
           <span class="modal-kicker">Administração</span>
           <h3>Produtos e estoque</h3>
+          <span class="admin-access">Acesso restrito</span>
         </div>
+        <div class="admin-section-heading"><h4>Novo produto</h4><span>CADASTRO</span></div>
         <form id="newProductForm" class="admin-form">
           <input name="id" required placeholder="ID único (ex: carta-pokemon-01)">
           <input name="name" required placeholder="Nome do produto">
@@ -237,14 +245,18 @@
             <option value="mangas">Mangás</option>
             <option value="colecionaveis">Colecionáveis</option>
             <option value="acessorios">Acessórios</option>
+            <option value="rpg">RPG</option>
+            <option value="cartas">Cartas</option>
           </select>
           <input name="price" type="number" min="0" step="0.01" required placeholder="Preço">
           <input name="stock" type="number" min="0" step="1" required placeholder="Estoque">
           <input name="image" placeholder="Caminho da imagem (opcional)">
           <input name="desc" class="field-wide" placeholder="Descrição (opcional)">
+          <label class="admin-preorder-option field-wide"><input name="is_preorder" type="checkbox"> Marcar como pré-venda</label>
           <button class="modal-primary field-wide" type="submit">Adicionar produto</button>
         </form>
         <p id="adminMessage" class="form-message"></p>
+        <div class="admin-section-heading"><h4>Produtos cadastrados</h4><span>CATÁLOGO</span></div>
         <div id="adminProducts" class="admin-products"></div>
       </section>
       <button id="logoutButton" class="modal-secondary" type="button">Sair da conta</button>

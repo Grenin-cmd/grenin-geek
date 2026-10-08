@@ -61,7 +61,7 @@ Deno.serve(async (request) => {
     const body = request.method === "GET" ? {} : await request.json().catch(() => ({}));
 
     if (request.method === "GET" && path === "products") {
-      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock").eq("active", true).order("id");
+      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,is_preorder").eq("active", true).order("id");
       if (error) throw error;
       return json(data?.map((product) => ({ ...product, price: Number(product.price) })) || []);
     }
@@ -100,13 +100,13 @@ Deno.serve(async (request) => {
     }
 
     if (path === "admin/products" && request.method === "GET") {
-      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,active").order("id");
+      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,is_preorder,active").order("id");
       if (error) throw error;
       return json(data?.map((product) => ({ ...product, price: Number(product.price) })) || []);
     }
     const productId = path.match(/^admin\/products\/(.+)$/)?.[1];
     if (productId && request.method === "PATCH") {
-      const { data, error } = await supabase.from("products").update({ price: Number(body.price), stock: Number(body.stock) }).eq("id", productId).select().maybeSingle();
+      const { data, error } = await supabase.from("products").update({ price: Number(body.price), stock: Number(body.stock), is_preorder: body.is_preorder === true }).eq("id", productId).select().maybeSingle();
       if (error || !data) return json({ error: "Produto não encontrado ou dados inválidos." }, 400);
       return json({ success: true });
     }
@@ -116,7 +116,7 @@ Deno.serve(async (request) => {
       return json({ success: true });
     }
     if (path === "admin/products" && request.method === "POST") {
-      const { error } = await supabase.from("products").insert({ id: body.id, name: body.name.trim(), category: body.category, price: Number(body.price), description: String(body.desc || "").trim(), image: String(body.image || "").trim(), stock: Number(body.stock) });
+      const { error } = await supabase.from("products").insert({ id: body.id, name: body.name.trim(), category: body.category, price: Number(body.price), description: String(body.desc || "").trim(), image: String(body.image || "").trim(), stock: Number(body.stock), is_preorder: body.is_preorder === true });
       if (error) return json({ error: error.code === "23505" ? "Já existe um produto com esse ID." : "Não foi possível adicionar o produto." }, 400);
       return json({ success: true }, 201);
     }

@@ -11,7 +11,9 @@ const CATEGORIES = {
   "pokemon-tcg":   { label: "Pokémon TCG",  color: "var(--type-electric)" },
   "mangas":        { label: "Mangás",       color: "var(--type-psychic)"  },
   "colecionaveis": { label: "Colecionável", color: "var(--type-fighting)" },
-  "acessorios":    { label: "Acessório",    color: "var(--type-colorless)"}
+  "acessorios":    { label: "Acessório",    color: "var(--type-colorless)"},
+  "rpg":           { label: "RPG",          color: "var(--type-rpg)" },
+  "cartas":        { label: "Cartas",       color: "var(--type-cards)" }
 };
 
 // Lista de produtos — troque nome, categoria, preço, descrição e imagem.
@@ -111,25 +113,24 @@ let currentSort = "default";
 // carrinho, então a ordenação na tela nunca pode bagunçar isso.
 function getSortedProducts(){
   const withIndex = PRODUCTS.map((p, originalIndex) => ({ p, originalIndex }));
-
-  if(currentSort === "price-asc"){
-    withIndex.sort((a, b) => a.p.price - b.p.price);
-  } else if(currentSort === "price-desc"){
-    withIndex.sort((a, b) => b.p.price - a.p.price);
-  }
-
-  return withIndex;
+  return withIndex.sort((a, b) => {
+    const stockOrder = Number(a.p.stock === 0) - Number(b.p.stock === 0);
+    if(stockOrder) return stockOrder;
+    if(currentSort === "price-asc") return a.p.price - b.p.price || a.originalIndex - b.originalIndex;
+    if(currentSort === "price-desc") return b.p.price - a.p.price || a.originalIndex - b.originalIndex;
+    return a.originalIndex - b.originalIndex;
+  });
 }
 
 function renderProducts(){
   binder.innerHTML = "";
   getSortedProducts().forEach(({ p }) => {
     const cat = CATEGORIES[p.category];
-    const outOfStock = p.stock === 0;
+    const outOfStock = p.stock <= 0;
     const isPreorder = p.is_preorder === true;
 
     const card = document.createElement("article");
-    card.className = "card" + (outOfStock && !isPreorder ? " out-of-stock" : "") + (isPreorder ? " preorder" : "");
+    card.className = "card" + (outOfStock ? " out-of-stock" : "") + (isPreorder ? " preorder" : "");
     card.dataset.category = p.category;
     card.dataset.name = normalize(p.name);
     card.style.setProperty("--cardcolor", cat.color);
@@ -140,20 +141,18 @@ function renderProducts(){
 
     const cardImgClass = "card-img" + (p.image ? " has-photo" : "");
 
-    // Badge de estoque/pré-venda
     let stockBadgeHtml = "";
-    if (isPreorder) {
-      stockBadgeHtml = `<span class="stock-badge preorder-badge">Pré-venda</span>`;
-    } else if (outOfStock) {
+    if (outOfStock) {
       stockBadgeHtml = `<span class="stock-badge">Esgotado</span>`;
+    } else if (isPreorder) {
+      stockBadgeHtml = `<span class="stock-badge preorder-badge">Pré-venda</span>`;
     }
 
-    // Botão do carrinho
     let cartButtonHtml;
-    if (isPreorder) {
+    if (outOfStock) {
+      cartButtonHtml = `<button type="button" class="btn-notify" data-notify-id="${p.id}">Avise-me quando chegar</button>`;
+    } else if (isPreorder) {
       cartButtonHtml = `<button type="button" class="btn-cart preorder-btn" data-id="${p.id}">📅 Pré-encomendar</button>`;
-    } else if (outOfStock) {
-      cartButtonHtml = `<button type="button" class="btn-cart" disabled>Esgotado</button>`;
     } else {
       cartButtonHtml = `<button type="button" class="btn-cart" data-id="${p.id}">🛒 Adicionar ao Carrinho</button>`;
     }
@@ -237,6 +236,15 @@ sortSelect.addEventListener("change", () => {
 // Um único listener no container cuida de todos os botões "Adicionar ao Carrinho",
 // mesmo que os cards sejam recriados — evita precisar de onclick="" inline.
 binder.addEventListener("click", (e) => {
+  const notifyBtn = e.target.closest("[data-notify-id]");
+  if(notifyBtn){
+    const product = PRODUCTS_BY_ID[notifyBtn.dataset.notifyId];
+    if(product){
+      const message = `Olá! Gostaria de ser avisado(a) quando o produto ${product.name} estiver disponível novamente.`;
+      window.open(whatsappLink(message), "_blank", "noopener");
+    }
+    return;
+  }
   const btn = e.target.closest(".btn-cart");
   if(!btn) return;
   addToCart(btn.dataset.id, btn);
@@ -362,7 +370,10 @@ async function renderAdminProducts(){
     const products = await apiRequest("/admin/products");
     adminProducts.innerHTML = products.map((product) => `
       <article class="admin-product ${product.active ? "" : "is-inactive"}" data-admin-product="${product.id}">
-        <div><strong>${product.name}</strong><small>${product.active ? "Ativo" : "Desativado"} · ${product.id}</small></div>
+        <div class="admin-product-info">
+          <span class="admin-status ${product.active ? "" : "is-inactive"}">${product.active ? "Ativo" : "Desativado"}</span>
+          <strong>${product.name}</strong><small>ID: ${product.id}</small>
+        </div>
         <label>Preço<input data-admin-price type="number" min="0" step="0.01" value="${product.price}"></label>
         <label>Estoque<input data-admin-stock type="number" min="0" step="1" value="${product.stock}"></label>
         <label class="preorder-toggle">
@@ -382,7 +393,9 @@ newProductForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(newProductForm);
   try {
-    await apiRequest("/admin/products", { method: "POST", body: JSON.stringify(Object.fromEntries(data)) });
+    const product = Object.fromEntries(data);
+    product.is_preorder = data.get("is_preorder") === "on";
+    await apiRequest("/admin/products", { method: "POST", body: JSON.stringify(product) });
     newProductForm.reset();
     setMessage(adminMessage, "Produto adicionado.", "success");
     await loadProducts();
@@ -520,8 +533,7 @@ function addToCart(id, btnEl){
   const product = PRODUCTS_BY_ID[id];
   const currentQty = getCartQuantity(id);
 
-  // Não deixa adicionar além do que existe em estoque (exceto pré-venda)
-  if(!product.is_preorder && currentQty >= product.stock){
+  if(currentQty >= product.stock){
     if(btnEl){
       const original = btnEl.textContent;
       btnEl.classList.add("limit");
@@ -594,8 +606,7 @@ function changeQuantity(id, delta){
 
   const product = PRODUCTS_BY_ID[item.id];
 
-  // Não deixa aumentar além do que existe em estoque (exceto pré-venda)
-  if(delta > 0 && !product.is_preorder && item.quantity >= product.stock){
+  if(delta > 0 && item.quantity >= product.stock){
     return;
   }
 
@@ -650,7 +661,7 @@ function updateCart(){
       ? `<img src="${product.image}" alt="${product.name}">`
       : "";
 
-    const atLimit = !product.is_preorder && item.quantity >= product.stock;
+    const atLimit = item.quantity >= product.stock;
     const limitMessage = atLimit ? `<p class="cart-item-limit">Limite em estoque atingido</p>` : "";
 
     return `
