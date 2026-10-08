@@ -861,13 +861,15 @@ footer{
   top:8px;
   right:8px;
   z-index:2;
-  padding:4px 7px;
-  border:1px solid rgba(255,255,255,.24);
-  border-radius:6px;
-  background:rgba(19,16,36,.78);
+  min-width:38px;
+  padding:6px 9px;
+  border:1px solid var(--gold);
+  border-radius:7px;
+  background:rgba(19,16,36,.96);
   color:#fff;
-  font:700 .62rem var(--font-mono);
-  backdrop-filter:blur(4px);
+  font:700 .8rem var(--font-mono);
+  text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
 }
 .preorder-badge{ background: var(--type-psychic); }
 .card.out-of-stock{
