@@ -5,6 +5,7 @@ const supabase = createClient(
   Deno.env.get("STORE_SERVICE_ROLE_KEY")!
 );
 const adminCpf = "14517447650";
+const cardConditions = new Set(["NM", "SP", "MP", "HP", "DMG"]);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -61,7 +62,7 @@ Deno.serve(async (request) => {
     const body = request.method === "GET" ? {} : await request.json().catch(() => ({}));
 
     if (request.method === "GET" && path === "products") {
-      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,is_preorder").eq("active", true).order("id");
+      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,is_preorder,condition:card_condition").eq("active", true).order("id");
       if (error) throw error;
       return json(data?.map((product) => ({ ...product, price: Number(product.price) })) || []);
     }
@@ -100,13 +101,17 @@ Deno.serve(async (request) => {
     }
 
     if (path === "admin/products" && request.method === "GET") {
-      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,is_preorder,active").order("id");
+      const { data, error } = await supabase.from("products").select("id,name,category,price,desc:description,image,stock,is_preorder,active,condition:card_condition").order("id");
       if (error) throw error;
       return json(data?.map((product) => ({ ...product, price: Number(product.price) })) || []);
     }
     const productId = path.match(/^admin\/products\/(.+)$/)?.[1];
     if (productId && request.method === "PATCH") {
-      const { data, error } = await supabase.from("products").update({ price: Number(body.price), stock: Number(body.stock), is_preorder: body.is_preorder === true }).eq("id", productId).select().maybeSingle();
+      const name = String(body.name || "").trim();
+      const category = String(body.category || "");
+      const cardCondition = String(body.condition || "");
+      if (!name || !Number.isFinite(Number(body.price)) || Number(body.price) < 0 || !Number.isInteger(Number(body.stock)) || Number(body.stock) < 0 || (category === "cartas" && !cardConditions.has(cardCondition))) return json({ error: "Revise os dados do produto e a conservação da carta." }, 400);
+      const { data, error } = await supabase.from("products").update({ name, category, price: Number(body.price), stock: Number(body.stock), description: String(body.desc || "").trim(), image: String(body.image || "").trim() || null, active: body.active === true, is_preorder: body.is_preorder === true, card_condition: category === "cartas" ? cardCondition : null }).eq("id", productId).select().maybeSingle();
       if (error || !data) return json({ error: "Produto não encontrado ou dados inválidos." }, 400);
       return json({ success: true });
     }
@@ -116,7 +121,10 @@ Deno.serve(async (request) => {
       return json({ success: true });
     }
     if (path === "admin/products" && request.method === "POST") {
-      const { error } = await supabase.from("products").insert({ id: body.id, name: body.name.trim(), category: body.category, price: Number(body.price), description: String(body.desc || "").trim(), image: String(body.image || "").trim(), stock: Number(body.stock), is_preorder: body.is_preorder === true });
+      const category = String(body.category || "");
+      const cardCondition = String(body.condition || "");
+      if (!body.id || !String(body.name || "").trim() || !Number.isFinite(Number(body.price)) || Number(body.price) < 0 || !Number.isInteger(Number(body.stock)) || Number(body.stock) < 0 || (category === "cartas" && !cardConditions.has(cardCondition))) return json({ error: "Revise os dados do produto e a conservação da carta." }, 400);
+      const { error } = await supabase.from("products").insert({ id: body.id, name: String(body.name).trim(), category, price: Number(body.price), description: String(body.desc || "").trim(), image: String(body.image || "").trim() || null, stock: Number(body.stock), is_preorder: body.is_preorder === true, active: body.active !== false, card_condition: category === "cartas" ? cardCondition : null });
       if (error) return json({ error: error.code === "23505" ? "Já existe um produto com esse ID." : "Não foi possível adicionar o produto." }, 400);
       return json({ success: true }, 201);
     }

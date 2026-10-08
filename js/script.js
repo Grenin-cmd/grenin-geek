@@ -15,6 +15,13 @@ const CATEGORIES = {
   "rpg":           { label: "RPG",          color: "var(--type-rpg)" },
   "cartas":        { label: "Cartas",       color: "var(--type-cards)" }
 };
+const CARD_CONDITIONS = {
+  NM: "Near Mint",
+  SP: "Slightly Played",
+  MP: "Moderately Played",
+  HP: "Heavily Played",
+  DMG: "Danificada"
+};
 
 // Lista de produtos — troque nome, categoria, preço, descrição e imagem.
 // O campo "image" é opcional: se não tiver, aparece um placeholder colorido no lugar da foto.
@@ -54,6 +61,28 @@ const COUPONS = {
 
 function formatBRL(value){
   return "R$ " + value.toFixed(2).replace(".", ",");
+}
+
+function escapeHTML(value){
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function renderCategoryOptions(selected){
+  return Object.entries(CATEGORIES).map(([value, category]) =>
+    `<option value="${value}" ${value === selected ? "selected" : ""}>${category.label}</option>`
+  ).join("");
+}
+
+function renderConditionOptions(selected = ""){
+  return `<option value="">Selecione...</option>${Object.entries(CARD_CONDITIONS).map(([value, label]) =>
+    `<option value="${value}" ${value === selected ? "selected" : ""}>${value} · ${label}</option>`
+  ).join("")}`;
 }
 
 function whatsappLink(message){
@@ -147,6 +176,9 @@ function renderProducts(){
     } else if (isPreorder) {
       stockBadgeHtml = `<span class="stock-badge preorder-badge">Pré-venda</span>`;
     }
+    const conditionBadgeHtml = p.category === "cartas" && p.condition
+      ? `<span class="condition-badge" title="Conservação: ${escapeHTML(p.condition)}" aria-label="Conservação da carta: ${escapeHTML(p.condition)}">${escapeHTML(p.condition)}</span>`
+      : "";
 
     let cartButtonHtml;
     if (outOfStock) {
@@ -161,7 +193,7 @@ function renderProducts(){
       <div class="card-top">
         <span class="type-label"><span class="dot"></span>${cat.label}</span>
       </div>
-      <div class="${cardImgClass}">${imageHtml}${stockBadgeHtml}</div>
+      <div class="${cardImgClass}">${imageHtml}${stockBadgeHtml}${conditionBadgeHtml}</div>
       <h3>${p.name}</h3>
       <p class="desc">${p.desc}</p>
       <div class="card-stats">
@@ -372,7 +404,7 @@ async function renderAdminProducts(){
       <article class="admin-product ${product.active ? "" : "is-inactive"}" data-admin-product="${product.id}">
         <div class="admin-product-info">
           <span class="admin-status ${product.active ? "" : "is-inactive"}">${product.active ? "Ativo" : "Desativado"}</span>
-          <strong>${product.name}</strong><small>ID: ${product.id}</small>
+          <strong>${escapeHTML(product.name)}</strong><small>ID: ${escapeHTML(product.id)}</small>
         </div>
         <label>Preço<input data-admin-price type="number" min="0" step="0.01" value="${product.price}"></label>
         <label>Estoque<input data-admin-stock type="number" min="0" step="1" value="${product.stock}"></label>
@@ -380,6 +412,20 @@ async function renderAdminProducts(){
           <input type="checkbox" data-admin-preorder ${product.is_preorder ? "checked" : ""}>
           <span>Ativar pré-venda</span>
         </label>
+        <details class="admin-edit-details">
+          <summary>Editar dados do produto</summary>
+          <div class="admin-edit-fields">
+            <label>Nome<input data-admin-name required value="${escapeHTML(product.name)}"></label>
+            <label>Categoria<select data-admin-category>${renderCategoryOptions(product.category)}</select></label>
+            <label>Imagem<input data-admin-image value="${escapeHTML(product.image || "")}" placeholder="URL ou caminho da imagem"></label>
+            <label class="field-wide">Descrição<textarea data-admin-desc rows="3">${escapeHTML(product.desc || "")}</textarea></label>
+            <label class="admin-active-toggle"><input data-admin-active type="checkbox" ${product.active ? "checked" : ""}> Disponível no site</label>
+            <label data-admin-condition-field class="admin-condition-field ${product.category === "cartas" ? "" : "is-hidden"}">
+              Conservação da carta
+              <select data-admin-condition ${product.category === "cartas" ? "required" : ""}>${renderConditionOptions(product.condition || "")}</select>
+            </label>
+          </div>
+        </details>
         <button type="button" data-admin-save>Salvar</button>
         ${product.active ? `<button type="button" class="admin-delete" data-admin-delete>Desativar</button>` : ""}
       </article>
@@ -389,14 +435,28 @@ async function renderAdminProducts(){
   }
 }
 
+const newProductCategory = newProductForm.querySelector('[name="category"]');
+const newProductConditionField = document.getElementById("newCardConditionField");
+const newProductCondition = newProductForm.querySelector('[name="condition"]');
+function syncNewProductCondition(){
+  const isCard = newProductCategory.value === "cartas";
+  newProductConditionField.classList.toggle("is-hidden", !isCard);
+  newProductCondition.required = isCard;
+  if(!isCard) newProductCondition.value = "";
+}
+newProductCategory.addEventListener("change", syncNewProductCondition);
+syncNewProductCondition();
+
 newProductForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = new FormData(newProductForm);
   try {
     const product = Object.fromEntries(data);
     product.is_preorder = data.get("is_preorder") === "on";
+    product.condition = product.category === "cartas" ? data.get("condition") : null;
     await apiRequest("/admin/products", { method: "POST", body: JSON.stringify(product) });
     newProductForm.reset();
+    syncNewProductCondition();
     setMessage(adminMessage, "Produto adicionado.", "success");
     await loadProducts();
     renderProducts();
@@ -412,11 +472,26 @@ adminProducts.addEventListener("click", async (event) => {
   const id = productCard.dataset.adminProduct;
   try {
     if(event.target.closest("[data-admin-save]")){
+      const category = productCard.querySelector("[data-admin-category]").value;
       const updateData = {
+        name: productCard.querySelector("[data-admin-name]").value.trim(),
+        category,
+        image: productCard.querySelector("[data-admin-image]").value.trim(),
+        desc: productCard.querySelector("[data-admin-desc]").value.trim(),
+        active: productCard.querySelector("[data-admin-active]").checked,
         price: Number(productCard.querySelector("[data-admin-price]").value),
         stock: Number(productCard.querySelector("[data-admin-stock]").value),
-        is_preorder: productCard.querySelector("[data-admin-preorder]")?.checked || false
+        is_preorder: productCard.querySelector("[data-admin-preorder]")?.checked || false,
+        condition: category === "cartas" ? productCard.querySelector("[data-admin-condition]").value : null
       };
+      if(!updateData.name){
+        setMessage(adminMessage, "Informe o nome do produto.", "error");
+        return;
+      }
+      if(category === "cartas" && !updateData.condition){
+        setMessage(adminMessage, "Selecione a conservação da carta.", "error");
+        return;
+      }
       await apiRequest(`/admin/products/${id}`, { method: "PATCH", body: JSON.stringify(updateData) });
       setMessage(adminMessage, "Produto atualizado.", "success");
       await loadProducts();
@@ -433,6 +508,18 @@ adminProducts.addEventListener("click", async (event) => {
   } catch(error) {
     setMessage(adminMessage, error.message, "error");
   }
+});
+
+adminProducts.addEventListener("change", (event) => {
+  const categorySelect = event.target.closest("[data-admin-category]");
+  if(!categorySelect) return;
+  const productCard = categorySelect.closest("[data-admin-product]");
+  const conditionField = productCard.querySelector("[data-admin-condition-field]");
+  const conditionSelect = productCard.querySelector("[data-admin-condition]");
+  const isCard = categorySelect.value === "cartas";
+  conditionField.classList.toggle("is-hidden", !isCard);
+  conditionSelect.required = isCard;
+  if(!isCard) conditionSelect.value = "";
 });
 
 function openAccount(){

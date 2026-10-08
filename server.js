@@ -3,6 +3,7 @@ const express = require("express");
 const { Pool } = require("pg");
 
 const PORT = process.env.PORT || 3000;
+const cardConditions = new Set(["NM", "SP", "MP", "HP", "DMG"]);
 const DATABASE_URL = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
 if (!DATABASE_URL) throw new Error("Defina SUPABASE_DB_URL ou DATABASE_URL com a conexão do Supabase.");
 
@@ -42,9 +43,10 @@ async function initializeDatabase() {
       id TEXT PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL,
       price NUMERIC(10, 2) NOT NULL CHECK (price >= 0), description TEXT NOT NULL DEFAULT '',
       image TEXT, stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
-      is_preorder BOOLEAN NOT NULL DEFAULT FALSE, active BOOLEAN NOT NULL DEFAULT TRUE
+      is_preorder BOOLEAN NOT NULL DEFAULT FALSE, card_condition TEXT, active BOOLEAN NOT NULL DEFAULT TRUE
     );
     ALTER TABLE products ADD COLUMN IF NOT EXISTS is_preorder BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS card_condition TEXT;
     CREATE TABLE IF NOT EXISTS orders (
       id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id),
       delivery TEXT NOT NULL CHECK (delivery IN ('pickup', 'shipping')),
@@ -120,25 +122,27 @@ function validateCustomer(body) {
 }
 
 app.get("/api/products", async (request, response, next) => {
-  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock, is_preorder FROM products WHERE active = TRUE ORDER BY id")).rows); } catch (error) { next(error); }
+  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock, is_preorder, card_condition AS condition FROM products WHERE active = TRUE ORDER BY id")).rows); } catch (error) { next(error); }
 });
 app.get("/api/admin/products", adminAuth, async (request, response, next) => {
-  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock, is_preorder, active FROM products ORDER BY id")).rows); } catch (error) { next(error); }
+  try { response.json((await database.query("SELECT id, name, category, price::float8 AS price, description AS desc, image, stock, is_preorder, active, card_condition AS condition FROM products ORDER BY id")).rows); } catch (error) { next(error); }
 });
 app.patch("/api/admin/products/:id", adminAuth, async (request, response, next) => {
-  const { price, stock, is_preorder } = request.body;
+  const { name, category, price, stock, desc, image, is_preorder, active, condition } = request.body;
   if (!Number.isFinite(Number(price)) || Number(price) < 0 || !Number.isInteger(Number(stock)) || Number(stock) < 0) return response.status(400).json({ error: "Preço ou estoque inválido." });
+  if (!String(name || "").trim() || !category || (category === "cartas" && !cardConditions.has(condition))) return response.status(400).json({ error: "Revise o nome, a categoria e a conservação da carta." });
   try {
-    const result = await database.query("UPDATE products SET price = $1, stock = $2, is_preorder = $3 WHERE id = $4", [Number(price), Number(stock), is_preorder === true, request.params.id]);
+    const result = await database.query("UPDATE products SET name = $1, category = $2, price = $3, stock = $4, description = $5, image = $6, is_preorder = $7, active = $8, card_condition = $9 WHERE id = $10", [String(name).trim(), category, Number(price), Number(stock), String(desc || "").trim(), String(image || "").trim() || null, is_preorder === true, active === true, category === "cartas" ? condition : null, request.params.id]);
     if (!result.rowCount) return response.status(404).json({ error: "Produto não encontrado." });
     response.json({ success: true });
   } catch (error) { next(error); }
 });
 app.post("/api/admin/products", adminAuth, async (request, response, next) => {
-  const { id, name, category, price, desc, image, stock, is_preorder } = request.body;
+  const { id, name, category, price, desc, image, stock, is_preorder, condition } = request.body;
   if (!id || !name || !category || !Number.isFinite(Number(price)) || Number(price) < 0 || !Number.isInteger(Number(stock)) || Number(stock) < 0) return response.status(400).json({ error: "Preencha os dados do produto corretamente." });
+  if (category === "cartas" && !cardConditions.has(condition)) return response.status(400).json({ error: "Selecione a conservação da carta." });
   try {
-    await database.query("INSERT INTO products (id, name, category, price, description, image, stock, is_preorder) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", [id, name.trim(), category, Number(price), String(desc || "").trim(), String(image || "").trim(), Number(stock), is_preorder === true]);
+    await database.query("INSERT INTO products (id, name, category, price, description, image, stock, is_preorder, active, card_condition) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $9)", [id, name.trim(), category, Number(price), String(desc || "").trim(), String(image || "").trim() || null, Number(stock), is_preorder === true, category === "cartas" ? condition : null]);
     response.status(201).json({ success: true });
   } catch (error) { response.status(error.code === "23505" ? 409 : 400).json({ error: error.code === "23505" ? "Já existe um produto com esse ID." : "Não foi possível adicionar o produto." }); }
 });

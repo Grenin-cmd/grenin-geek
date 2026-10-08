@@ -252,6 +252,17 @@
           <input name="stock" type="number" min="0" step="1" required placeholder="Estoque">
           <input name="image" placeholder="Caminho da imagem (opcional)">
           <input name="desc" class="field-wide" placeholder="Descrição (opcional)">
+          <label id="newCardConditionField" class="admin-condition-field field-wide is-hidden">
+            Conservação da carta
+            <select name="condition">
+              <option value="">Selecione...</option>
+              <option value="NM">NM · Near Mint</option>
+              <option value="SP">SP · Slightly Played</option>
+              <option value="MP">MP · Moderately Played</option>
+              <option value="HP">HP · Heavily Played</option>
+              <option value="DMG">DMG · Danificada</option>
+            </select>
+          </label>
           <label class="admin-preorder-option field-wide"><input name="is_preorder" type="checkbox"> Marcar como pré-venda</label>
           <button class="modal-primary field-wide" type="submit">Adicionar produto</button>
         </form>

@@ -37,10 +37,11 @@ No painel do Supabase:
 1. Abra **SQL Editor**, crie uma query e execute `supabase/migrations/001_store.sql`.
 2. Execute também `supabase/migrations/002_add_preorder.sql` para habilitar a marca de pré-venda.
 3. Execute `supabase/migrations/003_fix_preorder_checkout.sql` e depois `supabase/migrations/004_limit_preorder_stock.sql` para garantir que a pré-venda respeite o estoque cadastrado.
-4. Abra **Edge Functions** e publique a função `api` com o conteúdo atualizado de `supabase/functions/api/index.ts`.
-5. Nas configurações da função, desative **JWT verification** / **Verify JWT**, pois o login da loja usa CPF e senha próprios.
-6. Troque `SEU_PROJECT_REF` no `index.html` pelo identificador do seu projeto.
-7. Faça commit e aguarde o GitHub Pages atualizar.
+4. Execute `supabase/migrations/005_add_card_condition.sql` para salvar a conservação das cartas.
+5. Abra **Edge Functions** e publique a função `api` com o conteúdo atualizado de `supabase/functions/api/index.ts`.
+6. Nas configurações da função, desative **JWT verification** / **Verify JWT**, pois o login da loja usa CPF e senha próprios.
+7. Troque `SEU_PROJECT_REF` no `index.html` pelo identificador do seu projeto.
+8. Faça commit e aguarde o GitHub Pages atualizar.
 
 O arquivo `supabase/config.toml` também registra `verify_jwt = false` para deploy feito pela CLI.
 
