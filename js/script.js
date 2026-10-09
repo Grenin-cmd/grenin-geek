@@ -770,7 +770,9 @@ function updateCart(){
   }).join("");
 
   const subtotal = cartSubtotal();
-  const discount = appliedCoupon ? subtotal * appliedCoupon.percent : 0;
+  const discount = appliedCoupon
+    ? appliedCoupon.singleUse ? Math.round((subtotal * appliedCoupon.percent + Number.EPSILON) * 100) / 100 : subtotal * appliedCoupon.percent
+    : 0;
   const total = subtotal - discount;
 
   cartSubtotalEl.textContent = formatBRL(subtotal);
@@ -787,12 +789,35 @@ function updateCart(){
   cartTotalEl.textContent = formatBRL(total);
 }
 
-applyCouponBtn.addEventListener("click", () => {
+applyCouponBtn.addEventListener("click", async () => {
   const code = couponInput.value.trim().toUpperCase();
 
   if(!code){
     couponMessageEl.textContent = "Digite um código de cupom.";
     couponMessageEl.className = "coupon-message error";
+    return;
+  }
+
+  if(code === "SUSTO10"){
+    if(!currentUser()){
+      openAccount();
+      setMessage(loginMessage, "Entre ou crie sua conta para usar este cupom.", "error");
+      return;
+    }
+    applyCouponBtn.disabled = true;
+    try {
+      const coupon = await apiRequest(`/coupons/${encodeURIComponent(code)}`);
+      appliedCoupon = { code: coupon.code, percent: coupon.percent, singleUse: true };
+      couponMessageEl.textContent = `Cupom aplicado! ${Math.round(coupon.percent * 100)}% de desconto.`;
+      couponMessageEl.className = "coupon-message success";
+    } catch(error) {
+      appliedCoupon = null;
+      couponMessageEl.textContent = error.message;
+      couponMessageEl.className = "coupon-message error";
+    } finally {
+      applyCouponBtn.disabled = false;
+    }
+    updateCart();
     return;
   }
 
@@ -811,7 +836,9 @@ applyCouponBtn.addEventListener("click", () => {
 
 function orderTotals(delivery = "pickup"){
   const subtotal = cartSubtotal();
-  const discount = appliedCoupon ? subtotal * appliedCoupon.percent : 0;
+  const discount = appliedCoupon
+    ? appliedCoupon.singleUse ? Math.round((subtotal * appliedCoupon.percent + Number.EPSILON) * 100) / 100 : subtotal * appliedCoupon.percent
+    : 0;
   return { subtotal, discount, shipping: 0, total: subtotal - discount };
 }
 
@@ -850,7 +877,11 @@ checkoutForm.addEventListener("submit", async (event) => {
   try {
     await apiRequest("/orders", {
       method: "POST",
-      body: JSON.stringify({ delivery, items: cart.map((item) => ({ id: item.id, quantity: item.quantity })) })
+      body: JSON.stringify({
+        delivery,
+        items: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
+        ...(appliedCoupon?.singleUse ? { couponCode: appliedCoupon.code } : {})
+      })
     });
   } catch(error) {
     setMessage(checkoutMessage, error.message, "error");

@@ -85,17 +85,35 @@ Deno.serve(async (request) => {
     }
 
     const user = await authenticate(request);
-    if (["me", "orders", "admin/products"].some((item) => path === item || path.startsWith(`${item}/`)) && !user) return json({ error: "Faça login para continuar." }, 401);
+    if (["me", "orders", "coupons", "admin/products"].some((item) => path === item || path.startsWith(`${item}/`)) && !user) return json({ error: "Faça login para continuar." }, 401);
     if (path.startsWith("admin/") && user.role !== "admin") return json({ error: "Acesso restrito ao administrador." }, 403);
 
     if (path === "me" && request.method === "GET") return json({ user: publicUser(user) });
+    const couponCode = path.match(/^coupons\/([^/]+)$/)?.[1];
+    if (couponCode && request.method === "GET") {
+      const normalizedCode = decodeURIComponent(couponCode).trim().toUpperCase();
+      const { data: coupon, error } = await supabase.from("coupons").select("code,percent_off,starts_at,expires_at").eq("code", normalizedCode).maybeSingle();
+      if (error) throw error;
+      if (!coupon) return json({ error: "Cupom inválido." }, 404);
+      const now = Date.now();
+      if (new Date(coupon.starts_at).getTime() > now || new Date(coupon.expires_at).getTime() <= now) return json({ error: "Este cupom expirou ou ainda não está disponível." }, 400);
+      const { data: redemption, error: redemptionError } = await supabase.from("coupon_redemptions").select("coupon_code").eq("coupon_code", coupon.code).eq("user_id", user.id).maybeSingle();
+      if (redemptionError) throw redemptionError;
+      if (redemption) return json({ error: "Este cupom já foi utilizado nesta conta." }, 409);
+      return json({ code: coupon.code, percent: Number(coupon.percent_off) });
+    }
     if (path === "orders" && request.method === "GET") {
       const { data: orders, error } = await supabase.from("orders").select("id,delivery,total,created_at,order_items(name:product_name,quantity)").eq("user_id", user.id).order("id", { ascending: false });
       if (error) throw error;
       return json(orders?.map((order) => ({ ...order, total: Number(order.total), date: new Date(order.created_at).toLocaleDateString("pt-BR"), items: order.order_items })) || []);
     }
     if (path === "orders" && request.method === "POST") {
-      const { data: orderId, error } = await supabase.rpc("create_store_order", { p_user_id: user.id, p_delivery: body.delivery, p_items: body.items });
+      const { data: orderId, error } = await supabase.rpc("create_store_order", {
+        p_user_id: user.id,
+        p_delivery: body.delivery,
+        p_items: body.items,
+        p_coupon_code: typeof body.couponCode === "string" ? body.couponCode.trim().toUpperCase() || null : null
+      });
       if (error) return json({ error: error.message }, 400);
       return json({ orderId }, 201);
     }
