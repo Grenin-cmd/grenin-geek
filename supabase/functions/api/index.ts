@@ -85,22 +85,24 @@ Deno.serve(async (request) => {
     }
 
     const user = await authenticate(request);
-    if (["me", "orders", "coupons", "admin/products"].some((item) => path === item || path.startsWith(`${item}/`)) && !user) return json({ error: "Faça login para continuar." }, 401);
+    if (["me", "orders"].some((item) => path === item || path.startsWith(`${item}/`)) && !user || path.startsWith("admin/") && !user) return json({ error: "Faça login para continuar." }, 401);
     if (path.startsWith("admin/") && user.role !== "admin") return json({ error: "Acesso restrito ao administrador." }, 403);
 
     if (path === "me" && request.method === "GET") return json({ user: publicUser(user) });
     const couponCode = path.match(/^coupons\/([^/]+)$/)?.[1];
     if (couponCode && request.method === "GET") {
       const normalizedCode = decodeURIComponent(couponCode).trim().toUpperCase();
-      const { data: coupon, error } = await supabase.from("coupons").select("code,percent_off,starts_at,expires_at").eq("code", normalizedCode).maybeSingle();
+      const { data: coupon, error } = await supabase.from("coupons").select("code,percent_off,description,single_use,active,starts_at,expires_at").eq("code", normalizedCode).maybeSingle();
       if (error) throw error;
       if (!coupon) return json({ error: "Cupom inválido." }, 404);
       const now = Date.now();
-      if (new Date(coupon.starts_at).getTime() > now || new Date(coupon.expires_at).getTime() <= now) return json({ error: "Este cupom expirou ou ainda não está disponível." }, 400);
-      const { data: redemption, error: redemptionError } = await supabase.from("coupon_redemptions").select("coupon_code").eq("coupon_code", coupon.code).eq("user_id", user.id).maybeSingle();
-      if (redemptionError) throw redemptionError;
-      if (redemption) return json({ error: "Este cupom já foi utilizado nesta conta." }, 409);
-      return json({ code: coupon.code, percent: Number(coupon.percent_off) });
+      if (!coupon.active || new Date(coupon.starts_at).getTime() > now || (coupon.expires_at && new Date(coupon.expires_at).getTime() <= now)) return json({ error: "Este cupom expirou ou ainda não está disponível." }, 400);
+      if (coupon.single_use && user) {
+        const { data: redemption, error: redemptionError } = await supabase.from("coupon_redemptions").select("coupon_code").eq("coupon_code", coupon.code).eq("user_id", user.id).maybeSingle();
+        if (redemptionError) throw redemptionError;
+        if (redemption) return json({ error: "Este cupom já foi utilizado nesta conta." }, 409);
+      }
+      return json({ code: coupon.code, percent: Number(coupon.percent_off), description: coupon.description, singleUse: coupon.single_use });
     }
     if (path === "orders" && request.method === "GET") {
       const { data: orders, error } = await supabase.from("orders").select("id,delivery,total,created_at,order_items(name:product_name,quantity)").eq("user_id", user.id).order("id", { ascending: false });
@@ -116,6 +118,50 @@ Deno.serve(async (request) => {
       });
       if (error) return json({ error: error.message }, 400);
       return json({ orderId }, 201);
+    }
+
+    if (path === "admin/coupons" && request.method === "GET") {
+      const [{ data: coupons, error: couponError }, { data: redemptions, error: redemptionError }] = await Promise.all([
+        supabase.from("coupons").select("code,percent_off,description,single_use,active,starts_at,expires_at").order("code"),
+        supabase.from("coupon_redemptions").select("coupon_code")
+      ]);
+      if (couponError) throw couponError;
+      if (redemptionError) throw redemptionError;
+      const redemptionCounts = (redemptions || []).reduce<Record<string, number>>((counts: Record<string, number>, redemption: { coupon_code: string }) => {
+        counts[redemption.coupon_code] = (counts[redemption.coupon_code] || 0) + 1;
+        return counts;
+      }, {} as Record<string, number>);
+      return json((coupons || []).map((coupon: { code: string; percent_off: number; description: string; single_use: boolean; active: boolean; starts_at: string; expires_at: string | null }) => ({ ...coupon, percent: Number(coupon.percent_off), redemption_count: redemptionCounts[coupon.code] || 0 })));
+    }
+    if (path === "admin/inventory-value" && request.method === "GET") {
+      const { data, error } = await supabase.from("products").select("price,stock");
+      if (error) throw error;
+      const inventoryValue = (data || []).reduce<number>((total: number, product: { price: number; stock: number }) => total + Number(product.price) * Number(product.stock), 0);
+      return json({ inventoryValue });
+    }
+    if (path === "admin/coupons" && request.method === "POST") {
+      const code = String(body.code || "").trim().toUpperCase();
+      const percent = Number(body.percent);
+      const description = String(body.description || "").trim();
+      const expiryInput = String(body.expiresAt || "").trim();
+      const expiryTime = expiryInput ? new Date(expiryInput).getTime() : null;
+      if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !Number.isFinite(percent) || percent <= 0 || percent > 100 || !description || (expiryInput && (expiryTime === null || !Number.isFinite(expiryTime) || expiryTime <= Date.now()))) return json({ error: "Informe código, desconto, benefício e uma validade futura válida." }, 400);
+      const { error } = await supabase.from("coupons").insert({ code, percent_off: percent / 100, description, single_use: body.singleUse === true, starts_at: new Date().toISOString(), expires_at: expiryTime === null ? null : new Date(expiryTime).toISOString(), active: true });
+      if (error) return json({ error: error.code === "23505" ? "Já existe um cupom com esse código." : "Não foi possível criar o cupom." }, 400);
+      return json({ success: true }, 201);
+    }
+    const adminCouponCode = path.match(/^admin\/coupons\/([^/]+)$/)?.[1];
+    if (adminCouponCode && request.method === "PATCH") {
+      if (typeof body.active !== "boolean") return json({ error: "Estado do cupom inválido." }, 400);
+      const { data, error } = await supabase.from("coupons").update({ active: body.active }).eq("code", decodeURIComponent(adminCouponCode).toUpperCase()).select("code").maybeSingle();
+      if (error || !data) return json({ error: "Cupom não encontrado." }, 404);
+      return json({ success: true });
+    }
+    if (adminCouponCode && request.method === "DELETE") {
+      const { data, error } = await supabase.from("coupons").delete().eq("code", decodeURIComponent(adminCouponCode).toUpperCase()).select("code").maybeSingle();
+      if (error?.code === "23503") return json({ error: "Este cupom já foi utilizado e não pode ser removido. Desative-o para impedir novos usos." }, 409);
+      if (error || !data) return json({ error: "Cupom não encontrado." }, 404);
+      return json({ success: true });
     }
 
     if (path === "admin/products" && request.method === "GET") {

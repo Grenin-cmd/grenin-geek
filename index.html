@@ -236,8 +236,14 @@
           <h3>Produtos e estoque</h3>
           <span class="admin-access">Acesso restrito</span>
         </div>
-        <div class="admin-section-heading"><h4>Novo produto</h4><span>CADASTRO</span></div>
-        <form id="newProductForm" class="admin-form">
+        <div class="admin-tabs" role="tablist" aria-label="Seções administrativas">
+          <button class="admin-tab active" type="button" data-admin-tab="products" aria-selected="true">Produtos</button>
+          <button class="admin-tab" type="button" data-admin-tab="coupons" aria-selected="false">Cupons e estoque</button>
+        </div>
+        <p id="adminMessage" class="form-message"></p>
+        <div id="adminProductsView" data-admin-view="products">
+          <div class="admin-section-heading"><h4>Novo produto</h4><span>CADASTRO</span></div>
+          <form id="newProductForm" class="admin-form">
           <input name="id" required placeholder="ID único (ex: carta-pokemon-01)">
           <input name="name" required placeholder="Nome do produto">
           <select name="category" required>
@@ -265,10 +271,32 @@
           </label>
           <label class="admin-preorder-option field-wide"><input name="is_preorder" type="checkbox"> Marcar como pré-venda</label>
           <button class="modal-primary field-wide" type="submit">Adicionar produto</button>
-        </form>
-        <p id="adminMessage" class="form-message"></p>
-        <div class="admin-section-heading"><h4>Produtos cadastrados</h4><span>CATÁLOGO</span></div>
-        <div id="adminProducts" class="admin-products"></div>
+          </form>
+          <div class="admin-section-heading"><h4>Produtos cadastrados</h4><span>CATÁLOGO</span></div>
+          <div id="adminProducts" class="admin-products"></div>
+        </div>
+        <div id="adminCouponsView" data-admin-view="coupons" class="is-hidden">
+          <div class="admin-inventory-total">
+            <span>Valor total em estoque</span>
+            <strong id="adminInventoryValue">R$ 0,00</strong>
+          </div>
+          <div class="admin-section-heading"><h4>Novo cupom</h4><span>CADASTRO</span></div>
+          <form id="newCouponForm" class="admin-coupon-form">
+            <label>Código<input name="code" required maxlength="32" placeholder="Ex: SUSTO10"></label>
+            <label>Desconto (%)<input name="percent" type="number" min="0.01" max="100" step="0.01" required placeholder="10"></label>
+            <label>O que ele oferece<input name="description" required maxlength="160" placeholder="10% de desconto na compra"></label>
+            <label>Validade (opcional)<input name="expiresAt" type="datetime-local"></label>
+            <label class="admin-single-use"><input name="singleUse" type="checkbox"> Limitar a um uso por conta</label>
+            <button class="modal-primary" type="submit">Criar cupom</button>
+          </form>
+          <div class="admin-section-heading"><h4>Cupons cadastrados</h4><span>GERENCIAMENTO</span></div>
+          <div class="admin-coupon-filters" role="tablist" aria-label="Filtrar cupons">
+            <button class="admin-filter active" type="button" data-coupon-filter="all">Todos</button>
+            <button class="admin-filter" type="button" data-coupon-filter="active">Ativos</button>
+            <button class="admin-filter" type="button" data-coupon-filter="inactive">Desativados</button>
+          </div>
+          <div id="adminCoupons" class="admin-coupons"></div>
+        </div>
       </section>
       <button id="logoutButton" class="modal-secondary" type="button">Sair da conta</button>
     </div>

@@ -64,8 +64,13 @@ async function initializeDatabase() {
     );
     CREATE TABLE IF NOT EXISTS coupons (
       code TEXT PRIMARY KEY, percent_off NUMERIC(5, 4) NOT NULL CHECK (percent_off > 0 AND percent_off <= 1),
-      starts_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ NOT NULL CHECK (expires_at > starts_at)
+      description TEXT NOT NULL DEFAULT '', single_use BOOLEAN NOT NULL DEFAULT FALSE, active BOOLEAN NOT NULL DEFAULT TRUE,
+      starts_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ
     );
+    ALTER TABLE coupons ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';
+    ALTER TABLE coupons ADD COLUMN IF NOT EXISTS single_use BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE coupons ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE coupons ALTER COLUMN expires_at DROP NOT NULL;
     CREATE TABLE IF NOT EXISTS coupon_redemptions (
       coupon_code TEXT NOT NULL REFERENCES coupons(code), user_id BIGINT NOT NULL REFERENCES users(id),
       order_id BIGINT NOT NULL UNIQUE REFERENCES orders(id), redeemed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -73,7 +78,14 @@ async function initializeDatabase() {
     );
   `);
   await database.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS is_preorder BOOLEAN NOT NULL DEFAULT FALSE");
-  await database.query("INSERT INTO coupons (code, percent_off, starts_at, expires_at) VALUES ('SUSTO10', 0.10, NOW(), NOW() + INTERVAL '7 days') ON CONFLICT (code) DO NOTHING");
+  await database.query("UPDATE coupons SET percent_off = 0.10, description = '10% de desconto, uso único por conta, sem data de validade.', single_use = TRUE, starts_at = NOW(), expires_at = NULL WHERE code = 'SUSTO10'");
+  await database.query("INSERT INTO coupons (code, percent_off, description, single_use, starts_at, expires_at) VALUES ('SUSTO10', 0.10, '10% de desconto, uso único por conta, sem data de validade.', TRUE, NOW(), NULL) ON CONFLICT (code) DO NOTHING");
+  await database.query(`INSERT INTO coupons (code, percent_off, description, single_use, starts_at, expires_at) VALUES
+    ('GRENIN10', 0.10, '10% de desconto.', FALSE, NOW(), NULL),
+    ('BEMVINDO5', 0.05, '5% de desconto de boas-vindas.', FALSE, NOW(), NULL),
+    ('MESTREDASEMANA', 0.15, '15% de desconto.', FALSE, NOW(), NULL),
+    ('TREINADOR10', 0.10, '10% de desconto.', FALSE, NOW(), NULL)
+    ON CONFLICT (code) DO NOTHING`);
   await database.query("UPDATE users SET role = 'admin' WHERE cpf = $1", ["14517447650"]);
   for (const product of products) {
     await database.query(`INSERT INTO products (id, name, category, price, description, image, stock)
@@ -127,6 +139,10 @@ async function auth(request, response, next) {
     next();
   } catch (error) { next(error); }
 }
+function optionalAuth(request, response, next) {
+  if (!request.get("authorization")) return next();
+  return auth(request, response, next);
+}
 function adminAuth(request, response, next) {
   auth(request, response, () => request.user.role === "admin" ? next() : response.status(403).json({ error: "Acesso restrito ao administrador." }));
 }
@@ -166,6 +182,52 @@ app.delete("/api/admin/products/:id", adminAuth, async (request, response, next)
     response.json({ success: true });
   } catch (error) { next(error); }
 });
+app.get("/api/admin/coupons", adminAuth, async (request, response, next) => {
+  try {
+    const result = await database.query(`SELECT c.code, c.percent_off::float8 AS percent, c.description, c.single_use, c.active, c.starts_at, c.expires_at,
+      (SELECT COUNT(*)::integer FROM coupon_redemptions r WHERE r.coupon_code = c.code) AS redemption_count
+      FROM coupons c ORDER BY c.code`);
+    response.json(result.rows);
+  } catch (error) { next(error); }
+});
+app.get("/api/admin/inventory-value", adminAuth, async (request, response, next) => {
+  try {
+    const result = await database.query("SELECT COALESCE(SUM(price * stock), 0)::float8 AS inventory_value FROM products");
+    response.json({ inventoryValue: Number(result.rows[0].inventory_value) });
+  } catch (error) { next(error); }
+});
+app.post("/api/admin/coupons", adminAuth, async (request, response) => {
+  const code = String(request.body.code || "").trim().toUpperCase();
+  const percent = Number(request.body.percent);
+  const description = String(request.body.description || "").trim();
+  const expiryInput = String(request.body.expiresAt || "").trim();
+  const expiryTime = expiryInput ? new Date(expiryInput).getTime() : null;
+  if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !Number.isFinite(percent) || percent <= 0 || percent > 100 || !description || (expiryInput && (!Number.isFinite(expiryTime) || expiryTime <= Date.now()))) return response.status(400).json({ error: "Informe código, desconto, benefício e uma validade futura válida." });
+  try {
+    await database.query("INSERT INTO coupons (code, percent_off, description, single_use, starts_at, expires_at, active) VALUES ($1, $2, $3, $4, NOW(), $5, TRUE)", [code, percent / 100, description, request.body.singleUse === true, expiryTime === null ? null : new Date(expiryTime).toISOString()]);
+    response.status(201).json({ success: true });
+  } catch (error) {
+    response.status(error.code === "23505" ? 409 : 400).json({ error: error.code === "23505" ? "Já existe um cupom com esse código." : "Não foi possível criar o cupom." });
+  }
+});
+app.patch("/api/admin/coupons/:code", adminAuth, async (request, response, next) => {
+  if (typeof request.body.active !== "boolean") return response.status(400).json({ error: "Estado do cupom inválido." });
+  try {
+    const result = await database.query("UPDATE coupons SET active = $1 WHERE code = $2", [request.body.active, request.params.code.toUpperCase()]);
+    if (!result.rowCount) return response.status(404).json({ error: "Cupom não encontrado." });
+    response.json({ success: true });
+  } catch (error) { next(error); }
+});
+app.delete("/api/admin/coupons/:code", adminAuth, async (request, response, next) => {
+  try {
+    const result = await database.query("DELETE FROM coupons WHERE code = $1", [request.params.code.toUpperCase()]);
+    if (!result.rowCount) return response.status(404).json({ error: "Cupom não encontrado." });
+    response.json({ success: true });
+  } catch (error) {
+    if (error.code === "23503") return response.status(409).json({ error: "Este cupom já foi utilizado e não pode ser removido. Desative-o para impedir novos usos." });
+    next(error);
+  }
+});
 
 app.post("/api/auth/register", async (request, response) => {
   if (!validateCustomer(request.body) || String(request.body.password || "").length < 4) return response.status(400).json({ error: "Preencha os dados obrigatórios e uma senha de pelo menos 4 caracteres." });
@@ -193,24 +255,26 @@ app.get("/api/orders", auth, async (request, response, next) => {
     response.json(orders.map((order) => ({ ...order, items: items.filter((item) => String(item.order_id) === String(order.id)) })));
   } catch (error) { next(error); }
 });
-app.get("/api/coupons/:code", auth, async (request, response, next) => {
+app.get("/api/coupons/:code", optionalAuth, async (request, response, next) => {
   try {
     const result = await database.query(`
-      SELECT c.code, c.percent_off, c.starts_at <= NOW() AS started, c.expires_at > NOW() AS active,
-        EXISTS (SELECT 1 FROM coupon_redemptions r WHERE r.coupon_code = c.code AND r.user_id = $2) AS redeemed
+      SELECT c.code, c.percent_off, c.description, c.single_use, c.starts_at <= NOW() AS started, c.active,
+        (c.expires_at IS NULL OR c.expires_at > NOW()) AS unexpired
       FROM coupons c WHERE c.code = $1
-    `, [request.params.code.trim().toUpperCase(), request.user.id]);
+    `, [request.params.code.trim().toUpperCase()]);
     const coupon = result.rows[0];
     if (!coupon) return response.status(404).json({ error: "Cupom inválido." });
-    if (!coupon.started || !coupon.active) return response.status(400).json({ error: "Este cupom expirou ou ainda não está disponível." });
-    if (coupon.redeemed) return response.status(409).json({ error: "Este cupom já foi utilizado nesta conta." });
-    response.json({ code: coupon.code, percent: Number(coupon.percent_off) });
+    if (!coupon.started || !coupon.active || !coupon.unexpired) return response.status(400).json({ error: "Este cupom expirou ou ainda não está disponível." });
+    if (coupon.single_use && request.user) {
+      const redemption = await database.query("SELECT 1 FROM coupon_redemptions WHERE coupon_code = $1 AND user_id = $2", [coupon.code, request.user.id]);
+      if (redemption.rowCount) return response.status(409).json({ error: "Este cupom já foi utilizado nesta conta." });
+    }
+    response.json({ code: coupon.code, percent: Number(coupon.percent_off), description: coupon.description, singleUse: coupon.single_use });
   } catch (error) { next(error); }
 });
 app.post("/api/orders", auth, async (request, response) => {
   const { delivery, items } = request.body;
   const couponCode = typeof request.body.couponCode === "string" ? request.body.couponCode.trim().toUpperCase() : "";
-  if (request.body.couponCode && couponCode !== "SUSTO10") return response.status(400).json({ error: "Cupom inválido." });
   if (!["pickup", "shipping"].includes(delivery) || !Array.isArray(items) || items.length === 0) return response.status(400).json({ error: "Pedido inválido." });
   const client = await database.connect();
   try {
@@ -227,16 +291,21 @@ app.post("/api/orders", auth, async (request, response) => {
       total += Number(product.price) * quantity;
     }
     let discount = 0;
+    let couponSingleUse = false;
     if (couponCode) {
       const result = await client.query(`
-        SELECT percent_off, starts_at <= NOW() AS started, expires_at > NOW() AS active
+        SELECT percent_off, single_use, starts_at <= NOW() AS started, active,
+          (expires_at IS NULL OR expires_at > NOW()) AS unexpired
         FROM coupons WHERE code = $1 FOR UPDATE
       `, [couponCode]);
       const coupon = result.rows[0];
       if (!coupon) throw new Error("Cupom inválido.");
-      if (!coupon.started || !coupon.active) throw new Error("Este cupom expirou ou ainda não está disponível.");
-      const redemption = await client.query("SELECT 1 FROM coupon_redemptions WHERE coupon_code = $1 AND user_id = $2", [couponCode, request.user.id]);
-      if (redemption.rowCount) throw new Error("Este cupom já foi utilizado nesta conta.");
+      if (!coupon.started || !coupon.active || !coupon.unexpired) throw new Error("Este cupom expirou ou ainda não está disponível.");
+      couponSingleUse = coupon.single_use;
+      if (coupon.single_use) {
+        const redemption = await client.query("SELECT 1 FROM coupon_redemptions WHERE coupon_code = $1 AND user_id = $2", [couponCode, request.user.id]);
+        if (redemption.rowCount) throw new Error("Este cupom já foi utilizado nesta conta.");
+      }
       const discountResult = await client.query("SELECT ROUND($1::numeric * $2::numeric, 2)::float8 AS discount", [total, coupon.percent_off]);
       discount = discountResult.rows[0].discount;
     }
@@ -244,7 +313,7 @@ app.post("/api/orders", auth, async (request, response) => {
       "INSERT INTO orders (user_id, delivery, total, coupon_code, discount_amount) VALUES ($1, $2, $3, $4, $5) RETURNING id",
       [request.user.id, delivery, total - discount, couponCode || null, discount]
     );
-    if (couponCode) {
+    if (couponCode && couponSingleUse) {
       await client.query("INSERT INTO coupon_redemptions (coupon_code, user_id, order_id) VALUES ($1, $2, $3)", [couponCode, request.user.id, order.rows[0].id]);
     }
     for (const item of normalizedItems) {

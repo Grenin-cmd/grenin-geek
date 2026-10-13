@@ -46,15 +46,6 @@ let PRODUCTS = [
   { name: "Sleeves Central (100un)", category: "acessorios", price: 23, desc: "Tamanho padrão para cartas TCG.", image: "assets/produtos/sleevecentral.jpg", stock: 16 }
 ];
 
-// Cupons de desconto — chave é o código (o cliente pode digitar em
-// qualquer maiúscula/minúscula), valor é o percentual de desconto.
-const COUPONS = {
-  "GRENIN10": 0.10,
-  "BEMVINDO5": 0.05,
-   "MESTREDASEMANA": 0.15,
-   "TREINADOR10": 0.10
-};
-
 /* =========================================================
    HELPERS — funções pequenas reutilizadas em vários lugares
    ========================================================= */
@@ -330,6 +321,11 @@ const checkoutTotal = document.getElementById("checkoutTotal");
 const checkoutMessage = document.getElementById("checkoutMessage");
 const adminPanel = document.getElementById("adminPanel");
 const adminProducts = document.getElementById("adminProducts");
+const adminProductsView = document.getElementById("adminProductsView");
+const adminCouponsView = document.getElementById("adminCouponsView");
+const adminCoupons = document.getElementById("adminCoupons");
+const adminInventoryValue = document.getElementById("adminInventoryValue");
+const newCouponForm = document.getElementById("newCouponForm");
 const adminMessage = document.getElementById("adminMessage");
 const newProductForm = document.getElementById("newProductForm");
 
@@ -394,7 +390,10 @@ async function renderAccount(){
     <article class="order-card"><div><strong>Pedido #${order.id}</strong><small>${order.date} · ${order.delivery === "shipping" ? "Envio" : "Retirada"}</small></div><b>${formatBRL(order.total)}</b><p>${order.items.map((item) => `${item.quantity}x ${item.name}`).join(" · ")}</p></article>
   `).join("") : `<p class="empty-history">Você ainda não fez nenhuma compra.</p>`;
   adminPanel.classList.toggle("is-hidden", !user.isAdmin);
-  if(user.isAdmin) await renderAdminProducts();
+  if(user.isAdmin){
+    await renderAdminProducts();
+    if(!adminCouponsView.classList.contains("is-hidden")) await renderAdminCoupons();
+  }
 }
 
 async function renderAdminProducts(){
@@ -434,6 +433,122 @@ async function renderAdminProducts(){
     setMessage(adminMessage, error.message, "error");
   }
 }
+
+  let adminCouponRows = [];
+  let adminCouponFilter = "all";
+  let adminInventoryTimer = null;
+
+  function renderAdminCouponList(){
+    const coupons = adminCouponRows.filter((coupon) =>
+      adminCouponFilter === "all" || (adminCouponFilter === "active" ? coupon.active : !coupon.active)
+    );
+    adminCoupons.innerHTML = coupons.length ? coupons.map((coupon) => `
+      <article class="admin-coupon ${coupon.active ? "" : "is-inactive"}" data-admin-coupon="${escapeHTML(coupon.code)}">
+        <div class="admin-coupon-info">
+          <span class="admin-coupon-status ${coupon.active ? "is-active" : ""}">${coupon.active ? "Ativo" : "Desativado"}</span>
+          <strong>${escapeHTML(coupon.code)}</strong>
+          <p>${escapeHTML(coupon.description || "Sem descrição")} · ${Math.round(Number(coupon.percent) * 100)}% de desconto · ${coupon.single_use ? "uso único por conta" : "reutilizável"}</p>
+          <small>${coupon.expires_at ? `Válido até ${new Date(coupon.expires_at).toLocaleString("pt-BR")}` : "Sem data de validade"}${coupon.single_use ? ` · ${Number(coupon.redemption_count || 0)} contas resgataram` : ""}</small>
+        </div>
+        <button type="button" data-coupon-toggle="${coupon.active ? "false" : "true"}">${coupon.active ? "Desativar" : "Reativar"}</button>
+        <button type="button" class="admin-delete" data-coupon-delete>Remover</button>
+      </article>
+    `).join("") : `<p class="empty-history">Nenhum cupom neste filtro.</p>`;
+  }
+
+  async function refreshAdminInventory(){
+    const summary = await apiRequest("/admin/inventory-value");
+    adminInventoryValue.textContent = formatBRL(Number(summary.inventoryValue));
+  }
+
+  async function renderAdminCoupons(){
+    try {
+      const [coupons, summary] = await Promise.all([
+        apiRequest("/admin/coupons"),
+        apiRequest("/admin/inventory-value")
+      ]);
+      adminCouponRows = coupons;
+      adminInventoryValue.textContent = formatBRL(Number(summary.inventoryValue));
+      renderAdminCouponList();
+    } catch(error) {
+      setMessage(adminMessage, error.message, "error");
+    }
+  }
+
+  adminPanel.addEventListener("click", async (event) => {
+    const tab = event.target.closest("[data-admin-tab]");
+    if(tab){
+      document.querySelectorAll("[data-admin-tab]").forEach((button) => {
+        const selected = button === tab;
+        button.classList.toggle("active", selected);
+        button.setAttribute("aria-selected", String(selected));
+      });
+      const showCoupons = tab.dataset.adminTab === "coupons";
+      adminProductsView.classList.toggle("is-hidden", showCoupons);
+      adminCouponsView.classList.toggle("is-hidden", !showCoupons);
+      if(showCoupons){
+        await renderAdminCoupons();
+        if(!adminInventoryTimer){
+          adminInventoryTimer = window.setInterval(() => {
+            if(currentUser()?.isAdmin && !adminCouponsView.classList.contains("is-hidden")){
+              refreshAdminInventory().catch(() => {});
+            }
+          }, 30000);
+        }
+      }
+      return;
+    }
+
+    const filter = event.target.closest("[data-coupon-filter]");
+    if(filter){
+      adminCouponFilter = filter.dataset.couponFilter;
+      document.querySelectorAll("[data-coupon-filter]").forEach((button) => button.classList.toggle("active", button === filter));
+      renderAdminCouponList();
+    }
+  });
+
+  newCouponForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const data = new FormData(newCouponForm);
+    try {
+      await apiRequest("/admin/coupons", {
+        method: "POST",
+        body: JSON.stringify({
+          code: String(data.get("code") || "").trim().toUpperCase(),
+          percent: Number(data.get("percent")),
+          description: String(data.get("description") || "").trim(),
+          singleUse: data.get("singleUse") === "on",
+          expiresAt: data.get("expiresAt") || ""
+        })
+      });
+      newCouponForm.reset();
+      setMessage(adminMessage, "Cupom criado.", "success");
+      await renderAdminCoupons();
+    } catch(error) {
+      setMessage(adminMessage, error.message, "error");
+    }
+  });
+
+  adminCoupons.addEventListener("click", async (event) => {
+    const couponCard = event.target.closest("[data-admin-coupon]");
+    if(!couponCard) return;
+    const code = couponCard.dataset.adminCoupon;
+    try {
+      if(event.target.closest("[data-coupon-toggle]")){
+        const active = event.target.closest("[data-coupon-toggle]").dataset.couponToggle === "true";
+        await apiRequest(`/admin/coupons/${encodeURIComponent(code)}`, { method: "PATCH", body: JSON.stringify({ active }) });
+        setMessage(adminMessage, active ? "Cupom reativado." : "Cupom desativado.", "success");
+        await renderAdminCoupons();
+      }
+      if(event.target.closest("[data-coupon-delete]") && confirm(`Remover o cupom ${code}?`)){
+        await apiRequest(`/admin/coupons/${encodeURIComponent(code)}`, { method: "DELETE" });
+        setMessage(adminMessage, "Cupom removido.", "success");
+        await renderAdminCoupons();
+      }
+    } catch(error) {
+      setMessage(adminMessage, error.message, "error");
+    }
+  });
 
 const newProductCategory = newProductForm.querySelector('[name="category"]');
 const newProductConditionField = document.getElementById("newCardConditionField");
@@ -798,37 +913,26 @@ applyCouponBtn.addEventListener("click", async () => {
     return;
   }
 
-  if(code === "SUSTO10"){
-    if(!currentUser()){
+  applyCouponBtn.disabled = true;
+  try {
+    const coupon = await apiRequest(`/coupons/${encodeURIComponent(code)}`);
+    if(coupon.singleUse && !currentUser()){
+      appliedCoupon = null;
       openAccount();
       setMessage(loginMessage, "Entre ou crie sua conta para usar este cupom.", "error");
-      return;
-    }
-    applyCouponBtn.disabled = true;
-    try {
-      const coupon = await apiRequest(`/coupons/${encodeURIComponent(code)}`);
-      appliedCoupon = { code: coupon.code, percent: coupon.percent, singleUse: true };
+      couponMessageEl.textContent = "Este cupom exige login e só pode ser usado uma vez por conta.";
+      couponMessageEl.className = "coupon-message error";
+    } else {
+      appliedCoupon = { code: coupon.code, percent: coupon.percent, singleUse: coupon.singleUse };
       couponMessageEl.textContent = `Cupom aplicado! ${Math.round(coupon.percent * 100)}% de desconto.`;
       couponMessageEl.className = "coupon-message success";
-    } catch(error) {
-      appliedCoupon = null;
-      couponMessageEl.textContent = error.message;
-      couponMessageEl.className = "coupon-message error";
-    } finally {
-      applyCouponBtn.disabled = false;
     }
-    updateCart();
-    return;
-  }
-
-  if(COUPONS[code]){
-    appliedCoupon = { code: code, percent: COUPONS[code] };
-    couponMessageEl.textContent = `Cupom aplicado! ${Math.round(COUPONS[code] * 100)}% de desconto.`;
-    couponMessageEl.className = "coupon-message success";
-  } else {
+  } catch(error) {
     appliedCoupon = null;
-    couponMessageEl.textContent = "Cupom inválido.";
+    couponMessageEl.textContent = error.message;
     couponMessageEl.className = "coupon-message error";
+  } finally {
+    applyCouponBtn.disabled = false;
   }
 
   updateCart();
@@ -837,7 +941,7 @@ applyCouponBtn.addEventListener("click", async () => {
 function orderTotals(delivery = "pickup"){
   const subtotal = cartSubtotal();
   const discount = appliedCoupon
-    ? appliedCoupon.singleUse ? Math.round((subtotal * appliedCoupon.percent + Number.EPSILON) * 100) / 100 : subtotal * appliedCoupon.percent
+    ? Math.round((subtotal * appliedCoupon.percent + Number.EPSILON) * 100) / 100
     : 0;
   return { subtotal, discount, shipping: 0, total: subtotal - discount };
 }
@@ -880,7 +984,7 @@ checkoutForm.addEventListener("submit", async (event) => {
       body: JSON.stringify({
         delivery,
         items: cart.map((item) => ({ id: item.id, quantity: item.quantity })),
-        ...(appliedCoupon?.singleUse ? { couponCode: appliedCoupon.code } : {})
+        ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {})
       })
     });
   } catch(error) {
