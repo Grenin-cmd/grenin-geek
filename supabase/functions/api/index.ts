@@ -4,7 +4,6 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("STORE_SERVICE_ROLE_KEY")!
 );
-const adminCpf = "14517447650";
 const cardConditions = new Set(["NM", "SP", "MP", "HP", "DMG"]);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,7 +69,7 @@ Deno.serve(async (request) => {
     if (path === "auth/register" && request.method === "POST") {
       const cpf = normalizeCpf(body.cpf);
       if (!body.name || cpf.length !== 11 || !body.cep || !body.street || !body.neighborhood || !body.number || String(body.password || "").length < 4) return json({ error: "Preencha os dados obrigatórios e uma senha de pelo menos 4 caracteres." }, 400);
-      const { data: user, error } = await supabase.from("users").insert({ name: body.name.trim(), cpf, cep: body.cep.trim(), street: body.street.trim(), neighborhood: body.neighborhood.trim(), number: body.number.trim(), complement: String(body.complement || "").trim(), password_hash: await passwordHash(body.password), role: cpf === adminCpf ? "admin" : "customer" }).select().single();
+      const { data: user, error } = await supabase.from("users").insert({ name: body.name.trim(), cpf, cep: body.cep.trim(), street: body.street.trim(), neighborhood: body.neighborhood.trim(), number: body.number.trim(), complement: String(body.complement || "").trim(), password_hash: await passwordHash(body.password), role: "customer" }).select().single();
       if (error) {
         console.error("REGISTER_ERROR", error);
         return json({ error: error.code === "23505" ? "Este CPF já possui uma conta." : "Não foi possível criar a conta." }, error.code === "23505" ? 409 : 500);

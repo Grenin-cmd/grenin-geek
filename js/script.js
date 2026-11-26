@@ -339,7 +339,7 @@ async function apiRequest(endpoint, options = {}){
   try {
     response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
   } catch(error) {
-    throw new Error("A API está desligada. Execute `npm start` no terminal e acesse http://localhost:3000.");
+    throw new Error("Estamos com instabilidade no momento. Tente novamente em instantes ou fale com a gente pelo WhatsApp.");
   }
   const data = await response.json().catch(() => ({}));
   if(!response.ok) throw new Error(data.error || data.message || "Não foi possível concluir a operação.");
