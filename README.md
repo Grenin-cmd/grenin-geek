@@ -51,7 +51,13 @@ Configure o segredo `STORE_SERVICE_ROLE_KEY` na Edge Function com a chave de ser
 
 ## Painel administrativo
 
-O cadastro existente de Victor Alexandre Pereira Carvalho, CPF `14517447650`, recebe automaticamente a função de administrador quando o servidor inicia. Basta entrar normalmente pela área da conta usando a senha já cadastrada; o painel **Produtos e estoque** aparecerá dentro da conta.
+Nenhuma conta vira administradora automaticamente. Para dar acesso ao painel, crie a conta normalmente pela loja e depois execute no **SQL Editor** do Supabase (troque pelo CPF da conta, só números):
+
+```sql
+update public.users set role = 'admin' where cpf = '00000000000';
+```
+
+Depois disso, basta entrar pela área da conta; o painel **Produtos e estoque** aparecerá dentro dela. No servidor local (`npm start`), também é possível definir a variável de ambiente `ADMIN_CPF` para promover a conta ao iniciar.
 
 No painel é possível alterar preço e estoque, adicionar produtos, desativar produtos e editar seus dados. A aba **Cupons e estoque** permite criar cupons reutilizáveis ou de uso único, com validade opcional, consultar resgates, ativar/desativar ou remover cupons e acompanhar o valor atual do inventário. Cupons já resgatados não podem ser apagados para preservar o histórico; eles podem ser desativados.
 
@@ -59,4 +65,4 @@ No painel é possível alterar preço e estoque, adicionar produtos, desativar p
 
 O banco Supabase começa vazio. Execute a migration SQL antes de publicar a função.
 
-Para manter o cadastro administrativo do Victor, crie a conta dele pela loja publicada com o CPF `14517447650`; a Edge Function atribui automaticamente a função de administrador.
+Para ter um administrador, crie a conta pela loja publicada e promova-a com o comando SQL da seção acima.

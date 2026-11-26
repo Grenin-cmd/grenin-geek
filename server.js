@@ -86,7 +86,7 @@ async function initializeDatabase() {
     ('MESTREDASEMANA', 0.15, '15% de desconto.', FALSE, NOW(), NULL),
     ('TREINADOR10', 0.10, '10% de desconto.', FALSE, NOW(), NULL)
     ON CONFLICT (code) DO NOTHING`);
-  await database.query("UPDATE users SET role = 'admin' WHERE cpf = $1", ["14517447650"]);
+  if (process.env.ADMIN_CPF) await database.query("UPDATE users SET role = 'admin' WHERE cpf = $1", [process.env.ADMIN_CPF.replace(/\D/g, "")]);
   for (const product of products) {
     await database.query(`INSERT INTO products (id, name, category, price, description, image, stock)
       VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO NOTHING`, product);
